@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | SGII</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h2>SGII</h2>
+            <span>Innovatech Solutions</span>
+        </div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="projects.html">Proyectos</a>
+            <a href="#" id="logoutBtn">Cerrar Sesión</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Dashboard</h1>
+        <p>Bienvenido, <span id="userName">Usuario</span></p>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <h3>Proyectos Activos</h3>
+                    <p class="stat-number" id="activeProjects">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <h3>Proyectos Completados</h3>
+                    <p class="stat-number" id="completedProjects">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏳</div>
+                <div class="stat-content">
+                    <h3>En Planificación</h3>
+                    <p class="stat-number" id="planningProjects">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-content">
+                    <h3>Total de Proyectos</h3>
+                    <p class="stat-number" id="totalProjects">0</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="recent-projects">
+            <h2>Proyectos Recientes</h2>
+            <div id="recentProjectsList">
+                <p>Cargando proyectos...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/projects.js"></script>
+</body>
+</html>
