@@ -140,3 +140,7 @@ Instala la extensión **Live Server** y haz clic derecho sobre `index.html` → 
 **Frontend:**
 - HTML5, CSS3, JavaScript puro
 - Comunicación con la API mediante `fetch`
+
+---
+
+> Proyecto desarrollado por **Innovatech Solutions** 🚀
