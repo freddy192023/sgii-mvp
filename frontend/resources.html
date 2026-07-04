@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asignación de Recursos | SGII - Innovatech</title>
+    <meta name="description" content="Gestión y optimización de la asignación de recursos del equipo en el SGII de Innovatech Solutions.">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
+
+    <div class="main-content">
+        <div id="topbarContainer"></div>
+
+        <div class="page-content">
+            <!-- Page Header -->
+            <div class="page-header mb-24">
+                <div class="page-header-text">
+                    <h1>Asignación de Recursos</h1>
+                    <p>Esta funcionalidad permite optimizar la asignación de recursos, reduciendo la sobrecarga y subutilización de equipos.</p>
+                </div>
+                <button class="btn-primary" onclick="document.getElementById('assignModal').style.display='flex'">＋ Asignar Recurso</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid mb-24">
+                <div class="stat-card blue">
+                    <div class="stat-icon-wrap blue">👥</div>
+                    <div class="stat-content">
+                        <h3>Miembros Equipo</h3>
+                        <p class="stat-number">6</p>
+                        <p class="stat-trend up">↑ Todos activos</p>
+                    </div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-icon-wrap yellow">🔥</div>
+                    <div class="stat-content">
+                        <h3>Sobrecargados</h3>
+                        <p class="stat-number">1</p>
+                        <p class="stat-trend down">↓ +90% capacidad</p>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon-wrap green">⚖️</div>
+                    <div class="stat-content">
+                        <h3>Capacidad Promedio</h3>
+                        <p class="stat-number">68%</p>
+                        <p class="stat-trend up">↑ Óptimo</p>
+                    </div>
+                </div>
+                <div class="stat-card cyan">
+                    <div class="stat-icon-wrap cyan">📋</div>
+                    <div class="stat-content">
+                        <h3>Tareas Asignadas</h3>
+                        <p class="stat-number">24</p>
+                        <p class="stat-trend">Esta semana</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capacity Overview Chart + Cards -->
+            <div class="grid-2 mb-24">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📊 Carga de Trabajo por Persona</span>
+                    </div>
+                    <canvas id="capacityChart" style="max-height:240px;"></canvas>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🎯 Distribución por Proyecto</span>
+                    </div>
+                    <canvas id="projectDistChart" style="max-height:240px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="card-header mb-16" style="padding:0;">
+                <span class="card-title" style="font-size:17px;">👤 Miembros del Equipo</span>
+                <div style="display:flex;gap:8px;">
+                    <select class="filter-select" id="roleFilter">
+                        <option value="">Todos los roles</option>
+                        <option value="Gerente de Proyectos">Gerente</option>
+                        <option value="Desarrollador Full Stack">Desarrollador</option>
+                        <option value="QA / Testing Lead">QA</option>
+                        <option value="DevOps Engineer">DevOps</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="resourceGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Asignar -->
+<div id="assignModal" class="modal">
+    <div class="modal-content">
+        <button class="close" onclick="document.getElementById('assignModal').style.display='none'">&times;</button>
+        <h2>Asignar Recurso a Tarea</h2>
+        <form onsubmit="event.preventDefault();document.getElementById('assignModal').style.display='none';alert('✅ Recurso asignado exitosamente.');">
+            <div class="form-group">
+                <label>Miembro del Equipo</label>
+                <select>
+                    <option>Ana García — Gerente de Proyectos</option>
+                    <option>Carlos López — Desarrollador Full Stack</option>
+                    <option>María Torres — Desarrolladora Backend</option>
+                    <option>Pedro Ruiz — Arquitecto de Software</option>
+                    <option>Laura Soto — QA / Testing Lead</option>
+                    <option>Diego Mora — DevOps Engineer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Proyecto</label>
+                <select>
+                    <option>ERP Corporativo</option>
+                    <option>App Móvil v2.0</option>
+                    <option>Migración BD</option>
+                    <option>API Pagos</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tarea</label>
+                <select>
+                    <option>API REST de gestión de usuarios</option>
+                    <option>Integración módulo financiero</option>
+                    <option>Pruebas de rendimiento</option>
+                    <option>Documentación técnica API</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Desde</label>
+                    <input type="date" value="2026-07-01">
+                </div>
+                <div class="form-group">
+                    <label>Hasta</label>
+                    <input type="date" value="2026-07-31">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Dedicación estimada (%)</label>
+                <input type="range" min="10" max="100" step="10" value="50" style="width:100%;background:transparent;">
+                <p style="text-align:right;font-size:13px;color:var(--text-muted);">50% del tiempo</p>
+            </div>
+            <button type="submit" class="btn-primary">Confirmar Asignación</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/demo.js"></script>
+<script>
+    document.getElementById('sidebarContainer').innerHTML = buildSidebar('resources');
+    document.getElementById('topbarContainer').innerHTML = buildTopbar('Asignación de Recursos', 'RF-003 · Gestión de Recursos');
+
+    let teamMembers = [];
+    let projectsList = [];
+    let tasksList = [];
+
+    async function loadResourcesData() {
+        const users = await apiRequest('/users/');
+        const tasks = await apiRequest('/tasks/');
+        const projs = await apiRequest('/projects/');
+
+        if (users && tasks) {
+            projectsList = projs || [];
+            tasksList = tasks;
+            
+            // Construir mapeo de recursos dinámicamente
+            teamMembers = users.map(u => {
+                const assigned = tasks.filter(t => t.assignee_id === u.id);
+                // Calcular capacidad: cada tarea en progreso o pendiente suma un 20% de carga, max 100%
+                const capacity = Math.min(assigned.filter(t => t.status !== 'done').length * 25, 100);
+                
+                return {
+                    id: u.id,
+                    name: u.full_name || u.username,
+                    role: u.role === 'admin' ? 'Administrador' : u.role === 'manager' ? 'Gerente de Proyecto' : 'Desarrollador',
+                    avatar_color: u.role === 'admin' ? '#ef4444' : u.role === 'manager' ? '#6366f1' : '#06b6d4',
+                    initials: getInitials(u.full_name || u.username),
+                    capacity: capacity || 10, // mínimo 10% para visualización
+                    tasks: assigned.map(t => t.title),
+                    email: u.email
+                };
+            });
+        } else {
+            teamMembers = [...DEMO_TEAM];
+        }
+
+        renderResources(teamMembers);
+        updateCharts();
+    }
+
+    function getCapacityClass(cap) {
+        if (cap >= 80) return 'high';
+        if (cap >= 50) return 'medium';
+        return 'low';
+    }
+
+    function getCapacityLabel(cap) {
+        if (cap >= 80) return '🔥 Sobrecargado';
+        if (cap >= 50) return '⚡ Ocupado';
+        return '✅ Disponible';
+    }
+
+    function renderResources(list) {
+        document.getElementById('resourceGrid').innerHTML = list.map(m => `
+            <div class="resource-card">
+                <div class="resource-header">
+                    <div class="resource-avatar" style="background:${m.avatar_color};">${m.initials}</div>
+                    <div class="resource-info">
+                        <h3>${escapeHtml(m.name)}</h3>
+                        <p>${escapeHtml(m.role)}</p>
+                        <p style="margin-top:2px;font-size:11px;">${m.email}</p>
+                    </div>
+                </div>
+                <div class="capacity-bar-wrap">
+                    <div class="capacity-label">
+                        <span>Carga de Trabajo ${getCapacityLabel(m.capacity)}</span>
+                        <span>${m.capacity}%</span>
+                    </div>
+                    <div class="capacity-bar">
+                        <div class="capacity-fill ${getCapacityClass(m.capacity)}" style="width:${m.capacity}%"></div>
+                    </div>
+                </div>
+                <div class="resource-tasks">
+                    ${m.tasks.length ? m.tasks.map(t => `<span class="task-tag">📌 ${escapeHtml(t)}</span>`).join('') : '<span class="task-tag" style="color:var(--text-muted);">Sin tareas</span>'}
+                </div>
+            </div>`).join('');
+    }
+
+    document.getElementById('roleFilter').addEventListener('change', function() {
+        const val = this.value;
+        const filtered = val ? teamMembers.filter(m => m.role.includes(val)) : teamMembers;
+        renderResources(filtered);
+    });
+
+    let capacityChartInstance = null;
+    let projectDistChartInstance = null;
+
+    function updateCharts() {
+        if (capacityChartInstance) capacityChartInstance.destroy();
+        if (projectDistChartInstance) projectDistChartInstance.destroy();
+
+        // Capacity Bar Chart
+        const capCtx = document.getElementById('capacityChart').getContext('2d');
+        capacityChartInstance = new Chart(capCtx, {
+            type: 'bar',
+            data: {
+                labels: teamMembers.map(m => m.initials),
+                datasets: [{
+                    label: 'Carga de Trabajo (%)',
+                    data: teamMembers.map(m => m.capacity),
+                    backgroundColor: teamMembers.map(m =>
+                        m.capacity >= 80 ? 'rgba(239,68,68,0.7)' :
+                        m.capacity >= 50 ? 'rgba(245,158,11,0.7)' :
+                        'rgba(16,185,129,0.7)'
+                    ),
+                    borderColor: teamMembers.map(m =>
+                        m.capacity >= 80 ? '#f87171' : m.capacity >= 50 ? '#fbbf24' : '#34d399'
+                    ),
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => `${ctx.parsed.y}% de capacidad` } }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' }, max: 100, beginAtZero: true }
+                }
+            }
+        });
+
+        // Project Distribution
+        const projCounts = {};
+        projectsList.forEach(p => { projCounts[p.name] = 0; });
+        tasksList.forEach(t => {
+            const p = projectsList.find(pr => pr.id === t.project_id);
+            if (p) { projCounts[p.name] = (projCounts[p.name] || 0) + 1; }
+        });
+
+        const projCtx = document.getElementById('projectDistChart').getContext('2d');
+        projectDistChartInstance = new Chart(projCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(projCounts).length ? Object.keys(projCounts) : ['ERP Corporativo', 'App Móvil v2.0'],
+                datasets: [{
+                    data: Object.values(projCounts).length ? Object.values(projCounts) : [5, 3],
+                    backgroundColor: ['rgba(99,102,241,0.8)','rgba(6,182,212,0.8)','rgba(245,158,11,0.8)','rgba(16,185,129,0.8)'],
+                    borderColor: ['#6366f1','#06b6d4','#f59e0b','#10b981'],
+                    borderWidth: 2, hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true, cutout: '65%',
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 10, font: { size: 11 } } } }
+            }
+        });
+    }
+
+    window.addEventListener('click', e => { if (e.target.id === 'assignModal') document.getElementById('assignModal').style.display = 'none'; });
+
+    Chart.defaults.color = '#94a3b8';
+    loadResourcesData();
+</script>
+</body>
+</html>

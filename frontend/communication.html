@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicación y Colaboración | SGII - Innovatech</title>
+    <meta name="description" content="Módulo de mensajería interna y colaboración en tiempo real del SGII de Innovatech Solutions.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
+
+    <div class="main-content">
+        <div id="topbarContainer"></div>
+
+        <div class="page-content" style="padding-bottom:0;">
+            <!-- Page Header -->
+            <div class="page-header mb-24">
+                <div class="page-header-text">
+                    <h1>Comunicación y Colaboración</h1>
+                    <p>El módulo de comunicación centraliza las conversaciones, eliminando la dependencia de correos electrónicos dispersos.</p>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <div style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:6px 14px;font-size:13px;color:#34d399;display:flex;align-items:center;gap:6px;">
+                        <span style="width:8px;height:8px;background:#34d399;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+                        6 en línea
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comm Layout -->
+            <div class="comm-layout">
+                <!-- Left Panel: Channels -->
+                <div class="chat-channels">
+                    <div class="chat-channels-header">
+                        <span>Canales</span>
+                        <button class="btn-icon" title="Nuevo canal" onclick="alert('Crear nuevo canal')">＋</button>
+                    </div>
+                    <div class="channel-list">
+                        <p style="font-size:10px;color:var(--text-muted);padding:4px 8px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Proyectos</p>
+                        <div class="channel-item active" onclick="switchChannel(this, '# erp-corporativo', 'Canal del proyecto ERP Corporativo')">
+                            <span class="channel-icon">#</span>
+                            <div class="channel-info">
+                                <h4>erp-corporativo</h4>
+                                <p>Diego: El pipeline está listo</p>
+                            </div>
+                            <span class="channel-badge">3</span>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, '# app-movil', 'Canal del proyecto App Móvil v2.0')">
+                            <span class="channel-icon">#</span>
+                            <div class="channel-info">
+                                <h4>app-movil</h4>
+                                <p>Carlos: Wireframes listos</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, '# migracion-bd', 'Canal del proyecto Migración BD')">
+                            <span class="channel-icon">#</span>
+                            <div class="channel-info">
+                                <h4>migracion-bd</h4>
+                                <p>María: Problema con FK</p>
+                            </div>
+                            <span class="channel-badge">1</span>
+                        </div>
+                        <p style="font-size:10px;color:var(--text-muted);padding:8px 8px 4px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">General</p>
+                        <div class="channel-item" onclick="switchChannel(this, '# general', 'Canal general del equipo')">
+                            <span class="channel-icon">#</span>
+                            <div class="channel-info">
+                                <h4>general</h4>
+                                <p>Ana: ¡Buenas noches!</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, '# anuncios', 'Canal de anuncios importantes')">
+                            <span class="channel-icon">📢</span>
+                            <div class="channel-info">
+                                <h4>anuncios</h4>
+                                <p>Sprint demo: viernes 15:00</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, '# random', 'Canal de conversación libre')">
+                            <span class="channel-icon">☕</span>
+                            <div class="channel-info">
+                                <h4>random</h4>
+                                <p>Pedro: ¿Alguien para el lunch?</p>
+                            </div>
+                        </div>
+                        <p style="font-size:10px;color:var(--text-muted);padding:8px 8px 4px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Mensajes Directos</p>
+                        <div class="channel-item" onclick="switchChannel(this, 'Ana García', 'Gerente de Proyectos')">
+                            <div class="assignee-avatar" style="background:#6366f1;width:28px;height:28px;font-size:11px;">AG</div>
+                            <div class="channel-info">
+                                <h4>Ana García</h4>
+                                <p>🟢 En línea</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, 'Carlos López', 'Desarrollador Full Stack')">
+                            <div class="assignee-avatar" style="background:#06b6d4;width:28px;height:28px;font-size:11px;">CL</div>
+                            <div class="channel-info">
+                                <h4>Carlos López</h4>
+                                <p>🟢 En línea</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, 'María Torres', 'Desarrolladora Backend')">
+                            <div class="assignee-avatar" style="background:#10b981;width:28px;height:28px;font-size:11px;">MT</div>
+                            <div class="channel-info">
+                                <h4>María Torres</h4>
+                                <p>⚡ Ocupada</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Chat -->
+                <div class="chat-main">
+                    <div class="chat-header">
+                        <div>
+                            <h3 id="chatChannelName"># erp-corporativo</h3>
+                            <p id="chatChannelDesc">Canal del proyecto ERP Corporativo</p>
+                        </div>
+                        <div style="margin-left:auto;display:flex;gap:8px;">
+                            <button class="btn-icon" title="Videollamada">📹</button>
+                            <button class="btn-icon" title="Buscar">🔍</button>
+                            <button class="btn-icon" title="Miembros">👥</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Messages will be injected here -->
+                    </div>
+
+                    <!-- Notifications strip -->
+                    <div style="padding:8px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(79,70,229,0.05);">
+                        <p style="font-size:12px;color:var(--text-muted);">🔔 <strong style="color:var(--primary-light);">Notificaciones:</strong>
+                        Laura completó 3 pruebas · Carlos hizo push en <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;">main</code> · Sprint review hoy 15:00</p>
+                    </div>
+
+                    <!-- Input -->
+                    <div class="chat-input-area">
+                        <div style="display:flex;gap:8px;margin-bottom:8px;">
+                            <button class="btn-icon" title="Archivo">📎</button>
+                            <button class="btn-icon" title="Emoji">😊</button>
+                            <button class="btn-icon" title="Mención">@</button>
+                            <button class="btn-icon" title="Código">&lt;/&gt;</button>
+                        </div>
+                        <div class="chat-input-wrap">
+                            <input type="text" id="messageInput" placeholder="Escribe un mensaje... (Presiona Enter para enviar)">
+                            <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+</style>
+
+<script src="js/demo.js"></script>
+<script>
+    document.getElementById('sidebarContainer').innerHTML = buildSidebar('communication');
+    document.getElementById('topbarContainer').innerHTML = buildTopbar('Comunicación', 'RF-005 · Mensajería Interna');
+
+    let currentChannel = 'general';
+    let messages = [];
+
+    async function loadMessages() {
+        const data = await apiRequest(`/messages/?channel=${encodeURIComponent(currentChannel)}`);
+        if (data) {
+            messages = data.map(m => ({
+                user: m.sender.full_name || m.sender.username,
+                initials: getInitials(m.sender.full_name || m.sender.username),
+                color: m.sender.role === 'admin' ? '#ef4444' : '#06b6d4',
+                time: new Date(m.created_at).toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'}),
+                text: m.content
+            }));
+        } else {
+            messages = [...DEMO_MESSAGES];
+        }
+        renderMessages(messages);
+    }
+
+    function renderMessages(list) {
+        document.getElementById('chatMessages').innerHTML = list.map(m => `
+            <div class="message">
+                <div class="message-avatar" style="background:${m.color || '#6366f1'};">${m.initials}</div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-name">${escapeHtml(m.user)}</span>
+                        <span class="message-time">${m.time}</span>
+                    </div>
+                    <div class="message-bubble">${m.text}</div>
+                </div>
+            </div>`).join('');
+        const el = document.getElementById('chatMessages');
+        el.scrollTop = el.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const res = await apiRequest('/messages/', {
+            method: 'POST',
+            body: JSON.stringify({
+                channel: currentChannel,
+                content: text
+            })
+        });
+
+        if (res || DEMO_MODE) {
+            input.value = '';
+            await loadMessages();
+        } else {
+            alert('Error al enviar el mensaje');
+        }
+    }
+
+    function switchChannel(el, name, desc) {
+        document.querySelectorAll('.channel-item').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        currentChannel = name.replace('# ', '');
+        document.getElementById('chatChannelName').textContent = name;
+        document.getElementById('chatChannelDesc').textContent = desc;
+        const badge = el.querySelector('.channel-badge');
+        if (badge) badge.remove();
+        loadMessages();
+    }
+
+    document.getElementById('messageInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Auto-poll messages every 4 seconds for real-time demonstration feel
+    setInterval(loadMessages, 4000);
+
+    loadMessages();
+</script>
+</body>
+</html>

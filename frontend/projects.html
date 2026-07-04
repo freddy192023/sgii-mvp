@@ -3,71 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proyectos | SGII</title>
+    <title>Gestión de Proyectos | SGII - Innovatech</title>
+    <meta name="description" content="Crea, edita y gestiona proyectos de forma centralizada en el SGII de Innovatech Solutions.">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">
-            <h2>SGII</h2>
-            <span>Innovatech Solutions</span>
-        </div>
-        <div class="nav-links">
-            <a href="dashboard.html">Dashboard</a>
-            <a href="projects.html" class="active">Proyectos</a>
-            <a href="#" id="logoutBtn">Cerrar Sesión</a>
-        </div>
-    </nav>
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
 
-    <div class="container">
-        <div class="page-header">
-            <h1>Gestión de Proyectos</h1>
-            <button id="createProjectBtn" class="btn-primary">+ Nuevo Proyecto</button>
-        </div>
+    <div class="main-content">
+        <div id="topbarContainer"></div>
 
-        <div id="projectModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Crear Nuevo Proyecto</h2>
-                <form id="projectForm">
-                    <div class="form-group">
-                        <label for="projectName">Nombre del Proyecto *</label>
-                        <input type="text" id="projectName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="projectDescription">Descripción</label>
-                        <textarea id="projectDescription" rows="3"></textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="projectStartDate">Fecha de Inicio</label>
-                            <input type="date" id="projectStartDate">
-                        </div>
-                        <div class="form-group">
-                            <label for="projectEndDate">Fecha de Fin</label>
-                            <input type="date" id="projectEndDate">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="projectStatus">Estado</label>
-                        <select id="projectStatus">
-                            <option value="planning">Planificación</option>
-                            <option value="active">Activo</option>
-                            <option value="completed">Completado</option>
-                            <option value="cancelled">Cancelado</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-primary">Crear Proyecto</button>
-                </form>
+        <div class="page-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="page-header-text">
+                    <h1>Gestión de Proyectos</h1>
+                    <p>Esta pantalla permite a los gerentes crear y gestionar proyectos de forma centralizada, reemplazando las hojas de Excel.</p>
+                </div>
+                <button id="createProjectBtn" class="btn-primary">
+                    ＋ Nuevo Proyecto
+                </button>
             </div>
-        </div>
 
-        <div id="projectsList">
-            <p>Cargando proyectos...</p>
+            <!-- Stats Row -->
+            <div class="stats-grid mb-24">
+                <div class="stat-card blue">
+                    <div class="stat-icon-wrap blue">📁</div>
+                    <div class="stat-content">
+                        <h3>Total Proyectos</h3>
+                        <p class="stat-number" id="totalProjects">6</p>
+                        <p class="stat-trend up">↑ 2 este mes</p>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon-wrap green">🟢</div>
+                    <div class="stat-content">
+                        <h3>Activos</h3>
+                        <p class="stat-number" id="activeCount">3</p>
+                        <p class="stat-trend up">↑ En ejecución</p>
+                    </div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-icon-wrap yellow">⏳</div>
+                    <div class="stat-content">
+                        <h3>Planificación</h3>
+                        <p class="stat-number" id="planningCount">2</p>
+                        <p class="stat-trend">Por iniciar</p>
+                    </div>
+                </div>
+                <div class="stat-card cyan">
+                    <div class="stat-icon-wrap cyan">✅</div>
+                    <div class="stat-content">
+                        <h3>Completados</h3>
+                        <p class="stat-number" id="completedCount">1</p>
+                        <p class="stat-trend up">↑ Este trimestre</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-input-wrap">
+                    <span>🔍</span>
+                    <input type="text" id="searchInput" placeholder="Buscar proyectos...">
+                </div>
+                <select class="filter-select" id="statusFilter">
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activo</option>
+                    <option value="planning">Planificación</option>
+                    <option value="completed">Completado</option>
+                    <option value="cancelled">Cancelado</option>
+                </select>
+                <select class="filter-select" id="sortFilter">
+                    <option value="name">Ordenar: Nombre</option>
+                    <option value="progress">Ordenar: Progreso</option>
+                    <option value="date">Ordenar: Fecha</option>
+                </select>
+            </div>
+
+            <!-- Projects List -->
+            <div id="projectsList"></div>
         </div>
     </div>
+</div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/projects.js"></script>
+<!-- Modal Crear/Editar Proyecto -->
+<div id="projectModal" class="modal">
+    <div class="modal-content">
+        <button class="close" onclick="closeModal()">&times;</button>
+        <h2 id="modalTitle">Crear Nuevo Proyecto</h2>
+        <form id="projectForm">
+            <div class="form-group">
+                <label for="projectName">Nombre del Proyecto *</label>
+                <input type="text" id="projectName" placeholder="Ej: Sistema de Gestión RRHH" required>
+            </div>
+            <div class="form-group">
+                <label for="projectDescription">Descripción</label>
+                <textarea id="projectDescription" rows="3" placeholder="Describe el objetivo del proyecto..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="projectStartDate">Fecha de Inicio</label>
+                    <input type="date" id="projectStartDate">
+                </div>
+                <div class="form-group">
+                    <label for="projectEndDate">Fecha de Fin</label>
+                    <input type="date" id="projectEndDate">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="projectStatus">Estado</label>
+                    <select id="projectStatus">
+                        <option value="planning">Planificación</option>
+                        <option value="active">Activo</option>
+                        <option value="completed">Completado</option>
+                        <option value="cancelled">Cancelado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="projectOwner">Responsable</label>
+                    <input type="text" id="projectOwner" placeholder="Nombre del gerente">
+                </div>
+            </div>
+            <button type="submit" class="btn-primary" id="submitBtn">Crear Proyecto</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/demo.js"></script>
+<script>
+    // Build layout
+    document.getElementById('sidebarContainer').innerHTML = buildSidebar('projects');
+    document.getElementById('topbarContainer').innerHTML = buildTopbar('Gestión de Proyectos', 'RF-001 · Gestión de Proyectos');
+
+    let editingId = null;
+    let projects = [];
+
+    async function loadProjectsData() {
+        // Cargar desde API
+        const data = await apiRequest('/projects/');
+        if (data) {
+            projects = data;
+        } else {
+            // Fallback a demo local
+            projects = [...DEMO_PROJECTS];
+        }
+        applyFilters();
+    }
+
+    function renderProjects(list) {
+        const container = document.getElementById('projectsList');
+        if (list.length === 0) {
+            container.innerHTML = `
+                <div class="card" style="text-align:center;padding:48px;">
+                    <p style="font-size:48px;margin-bottom:16px;">📁</p>
+                    <p style="color:var(--text-muted);">No se encontraron proyectos. Crea uno con el botón "+ Nuevo Proyecto".</p>
+                </div>`;
+            return;
+        }
+        container.innerHTML = list.map(p => `
+            <div class="project-item">
+                <div class="project-info">
+                    <h3>${escapeHtml(p.name)}</h3>
+                    <p>${escapeHtml(p.description || 'Sin descripción')}</p>
+                    <p class="project-dates">📅 ${formatDate(p.start_date)} → ${formatDate(p.end_date)}</p>
+                </div>
+                <div class="project-meta">
+                    <div class="project-progress">
+                        <span class="progress-label">${p.progress || 0}%</span>
+                        <div class="progress-bar-wrap">
+                            <div class="progress-bar-fill" style="width:${p.progress || 0}%"></div>
+                        </div>
+                    </div>
+                    <span class="status-badge status-${p.status}">${getStatusLabel(p.status)}</span>
+                    <button class="btn-edit" onclick="openEdit(${p.id})">✏️ Editar</button>
+                    <button class="btn-delete" onclick="deleteProject(${p.id})">🗑️</button>
+                </div>
+            </div>`).join('');
+    }
+
+    async function openEdit(id) {
+        const p = projects.find(x => x.id === id);
+        if (!p) return;
+        editingId = id;
+        document.getElementById('projectName').value = p.name;
+        document.getElementById('projectDescription').value = p.description || '';
+        document.getElementById('projectStartDate').value = p.start_date ? p.start_date.substring(0, 10) : '';
+        document.getElementById('projectEndDate').value = p.end_date ? p.end_date.substring(0, 10) : '';
+        document.getElementById('projectStatus').value = p.status;
+        document.getElementById('modalTitle').textContent = 'Editar Proyecto';
+        document.getElementById('submitBtn').textContent = 'Guardar Cambios';
+        document.getElementById('projectModal').style.display = 'flex';
+    }
+
+    async function deleteProject(id) {
+        if (!confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return;
+        const res = await apiRequest(`/projects/${id}`, { method: 'DELETE' });
+        if (res || DEMO_MODE) {
+            projects = projects.filter(p => p.id !== id);
+            applyFilters();
+        } else {
+            alert('Error al eliminar el proyecto de la base de datos');
+        }
+    }
+
+    function closeModal() {
+        editingId = null;
+        document.getElementById('projectForm').reset();
+        document.getElementById('modalTitle').textContent = 'Crear Nuevo Proyecto';
+        document.getElementById('submitBtn').textContent = 'Crear Proyecto';
+        document.getElementById('projectModal').style.display = 'none';
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        let list = projects.filter(p =>
+            (!search || p.name.toLowerCase().includes(search) || (p.description && p.description.toLowerCase().includes(search))) &&
+            (!status || p.status === status)
+        );
+        renderProjects(list);
+        document.getElementById('totalProjects').textContent = projects.length;
+        document.getElementById('activeCount').textContent = projects.filter(p => p.status === 'active').length;
+        document.getElementById('planningCount').textContent = projects.filter(p => p.status === 'planning').length;
+        document.getElementById('completedCount').textContent = projects.filter(p => p.status === 'completed').length;
+    }
+
+    document.getElementById('createProjectBtn').addEventListener('click', () => {
+        closeModal();
+        document.getElementById('projectModal').style.display = 'flex';
+    });
+
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+    document.getElementById('projectForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const data = {
+            name: document.getElementById('projectName').value,
+            description: document.getElementById('projectDescription').value,
+            start_date: document.getElementById('projectStartDate').value ? new Date(document.getElementById('projectStartDate').value).toISOString() : null,
+            end_date: document.getElementById('projectEndDate').value ? new Date(document.getElementById('projectEndDate').value).toISOString() : null,
+            status: document.getElementById('projectStatus').value,
+            progress: editingId ? (projects.find(p=>p.id===editingId)?.progress || 0) : 0
+        };
+
+        let result;
+        if (editingId) {
+            result = await apiRequest(`/projects/${editingId}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        } else {
+            result = await apiRequest('/projects/', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
+
+        if (result || DEMO_MODE) {
+            closeModal();
+            loadProjectsData();
+        } else {
+            alert('Error al guardar proyecto');
+        }
+    });
+
+    window.addEventListener('click', e => { if (e.target.id === 'projectModal') closeModal(); });
+
+    loadProjectsData();
+</script>
 </body>
 </html>

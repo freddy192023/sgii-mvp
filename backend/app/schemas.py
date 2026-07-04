@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     full_name: Optional[str] = None
+    role: Optional[str] = "dev"  # admin, manager, dev, viewer
 
 class UserCreate(UserBase):
     password: str
@@ -26,6 +27,7 @@ class ProjectBase(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     status: Optional[str] = "planning"
+    progress: Optional[int] = 0
 
 class ProjectCreate(ProjectBase):
     pass
@@ -36,6 +38,7 @@ class ProjectUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     status: Optional[str] = None
+    progress: Optional[int] = None
 
 class ProjectResponse(ProjectBase):
     id: int
@@ -43,6 +46,53 @@ class ProjectResponse(ProjectBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     
+    class Config:
+        from_attributes = True
+
+# --- Esquemas de Tarea ---
+class TaskBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    status: Optional[str] = "pending"   # pending, in_progress, review, done
+    priority: Optional[str] = "medium"  # low, medium, high
+    due_date: Optional[datetime] = None
+    project_id: int
+    assignee_id: Optional[int] = None
+
+class TaskCreate(TaskBase):
+    pass
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[datetime] = None
+    assignee_id: Optional[int] = None
+
+class TaskResponse(TaskBase):
+    id: int
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    assignee: Optional[UserResponse] = None
+
+    class Config:
+        from_attributes = True
+
+# --- Esquemas de Comunicación ---
+class MessageBase(BaseModel):
+    channel: str
+    content: str
+
+class MessageCreate(MessageBase):
+    pass
+
+class MessageResponse(MessageBase):
+    id: int
+    sender_id: int
+    created_at: datetime
+    sender: UserResponse
+
     class Config:
         from_attributes = True
 

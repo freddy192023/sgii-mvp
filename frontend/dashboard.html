@@ -3,66 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | SGII</title>
+    <title>Dashboard en Tiempo Real | SGII - Innovatech</title>
+    <meta name="description" content="Panel de control con KPIs, gráficos de estado y proyectos activos del sistema SGII.">
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-brand">
-            <h2>SGII</h2>
-            <span>Innovatech Solutions</span>
-        </div>
-        <div class="nav-links">
-            <a href="dashboard.html" class="active">Dashboard</a>
-            <a href="projects.html">Proyectos</a>
-            <a href="#" id="logoutBtn">Cerrar Sesión</a>
-        </div>
-    </nav>
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
 
-    <div class="container">
-        <h1>Dashboard</h1>
-        <p>Bienvenido, <span id="userName">Usuario</span></p>
-        
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-content">
-                    <h3>Proyectos Activos</h3>
-                    <p class="stat-number" id="activeProjects">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">✅</div>
-                <div class="stat-content">
-                    <h3>Proyectos Completados</h3>
-                    <p class="stat-number" id="completedProjects">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-content">
-                    <h3>En Planificación</h3>
-                    <p class="stat-number" id="planningProjects">0</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📈</div>
-                <div class="stat-content">
-                    <h3>Total de Proyectos</h3>
-                    <p class="stat-number" id="totalProjects">0</p>
-                </div>
-            </div>
-        </div>
+    <div class="main-content">
+        <div id="topbarContainer"></div>
 
-        <div class="recent-projects">
-            <h2>Proyectos Recientes</h2>
-            <div id="recentProjectsList">
-                <p>Cargando proyectos...</p>
+        <div class="page-content">
+            <!-- Page Header -->
+            <div class="page-header mb-24">
+                <div class="page-header-text">
+                    <h1>Dashboard en Tiempo Real</h1>
+                    <p>Este dashboard entrega visibilidad inmediata del estado de los proyectos, permitiendo decisiones basadas en datos en tiempo real.</p>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <select class="filter-select" id="timeFilter" style="margin:0;">
+                        <option value="month">Este mes</option>
+                        <option value="quarter" selected>Este trimestre</option>
+                        <option value="year">Este año</option>
+                    </select>
+                    <button class="btn-primary" style="width:auto;padding:10px 16px;" onclick="refreshData()">🔄 Actualizar</button>
+                </div>
+            </div>
+
+            <!-- KPIs -->
+            <div class="stats-grid mb-24">
+                <div class="stat-card blue">
+                    <div class="stat-icon-wrap blue">📁</div>
+                    <div class="stat-content">
+                        <h3>Proyectos Activos</h3>
+                        <p class="stat-number">3</p>
+                        <p class="stat-trend up">↑ +1 vs trimestre anterior</p>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon-wrap green">✅</div>
+                    <div class="stat-content">
+                        <h3>Tareas Completadas</h3>
+                        <p class="stat-number">47</p>
+                        <p class="stat-trend up">↑ 78% tasa de completitud</p>
+                    </div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-icon-wrap yellow">⏱️</div>
+                    <div class="stat-content">
+                        <h3>En Progreso</h3>
+                        <p class="stat-number">12</p>
+                        <p class="stat-trend">5 vencen esta semana</p>
+                    </div>
+                </div>
+                <div class="stat-card cyan">
+                    <div class="stat-icon-wrap cyan">👥</div>
+                    <div class="stat-content">
+                        <h3>Miembros Activos</h3>
+                        <p class="stat-number">6</p>
+                        <p class="stat-trend up">↑ Capacidad al 68%</p>
+                    </div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-icon-wrap red">🚨</div>
+                    <div class="stat-content">
+                        <h3>Tareas Atrasadas</h3>
+                        <p class="stat-number">3</p>
+                        <p class="stat-trend down">↓ Requieren atención</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-grid mb-24">
+                <!-- Bar Chart -->
+                <div class="chart-card">
+                    <div class="card-header">
+                        <span class="card-title">📊 Estado de Proyectos</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Por categoría</span>
+                    </div>
+                    <canvas id="barChart"></canvas>
+                </div>
+
+                <!-- Doughnut Chart -->
+                <div class="chart-card">
+                    <div class="card-header">
+                        <span class="card-title">🥧 Distribución de Tareas</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Estado actual</span>
+                    </div>
+                    <canvas id="doughnutChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Progress + Recent -->
+            <div class="grid-2 mb-24">
+                <!-- Project Progress -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📈 Progreso por Proyecto</span>
+                        <a href="projects.html" style="font-size:12px;color:var(--primary-light);text-decoration:none;">Ver todos →</a>
+                    </div>
+                    <div id="progressList"></div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🔔 Actividad Reciente</span>
+                        <span style="font-size:11px;color:var(--text-muted);">Últimas 24h</span>
+                    </div>
+                    <div class="notif-list" id="activityFeed"></div>
+                </div>
+            </div>
+
+            <!-- Completion Rate -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📉 Tendencia de Completitud Mensual</span>
+                </div>
+                <canvas id="lineChart" style="max-height:180px;"></canvas>
             </div>
         </div>
     </div>
+</div>
 
-    <script src="js/auth.js"></script>
-    <script src="js/projects.js"></script>
+<script src="js/demo.js"></script>
+<script>
+    document.getElementById('sidebarContainer').innerHTML = buildSidebar('dashboard');
+    document.getElementById('topbarContainer').innerHTML = buildTopbar('Dashboard', 'RF-004 · Visualización en Tiempo Real');
+
+    let projects = [];
+    let tasks = [];
+    let users = [];
+
+    async function loadDashboardData() {
+        const projs = await apiRequest('/projects/');
+        const tsks = await apiRequest('/tasks/');
+        const usrs = await apiRequest('/users/');
+
+        if (projs && tsks) {
+            projects = projs;
+            tasks = tsks;
+            users = usrs || [];
+        } else {
+            projects = [...DEMO_PROJECTS];
+            tasks = [...DEMO_TASKS];
+            users = [...DEMO_USERS];
+        }
+
+        renderStats();
+        renderCharts();
+        renderProgressList();
+    }
+
+    function renderStats() {
+        // Calcular estadísticas dinámicas
+        const totalProjs = projects.length;
+        const activeProjs = projects.filter(p => p.status === 'active').length;
+        const completedTasks = tasks.filter(t => t.status === 'done').length;
+        const inProgressTasks = tasks.filter(t => t.status === 'in_progress').length;
+        const pendingTasks = tasks.filter(t => t.status === 'pending').length;
+        const membersCount = users.length || 6;
+        
+        // Atrasadas (si tienen fecha límite pasada y no están completas)
+        const now = new Date();
+        const delayedTasks = tasks.filter(t => t.status !== 'done' && t.due_date && new Date(t.due_date) < now).length;
+
+        // Actualizar números en el DOM
+        const statNumbers = document.querySelectorAll('.stat-number');
+        if (statNumbers.length >= 5) {
+            statNumbers[0].textContent = activeProjs;
+            statNumbers[1].textContent = completedTasks;
+            statNumbers[2].textContent = inProgressTasks;
+            statNumbers[3].textContent = membersCount;
+            statNumbers[4].textContent = delayedTasks;
+        }
+    }
+
+    function renderProgressList() {
+        const progressList = document.getElementById('progressList');
+        const notCompleted = projects.filter(p => p.status !== 'completed');
+        
+        if (notCompleted.length === 0) {
+            progressList.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Todos los proyectos están completados 🎉</p>';
+            return;
+        }
+
+        progressList.innerHTML = notCompleted.map(p => `
+            <div style="margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                    <span style="font-size:13px;color:var(--text-primary);font-weight:500;">${escapeHtml(p.name)}</span>
+                    <span style="font-size:12px;color:var(--text-muted);">${p.progress || 0}%</span>
+                </div>
+                <div class="progress-bar-wrap" style="height:8px;">
+                    <div class="progress-bar-fill" style="width:${p.progress || 0}%;"></div>
+                </div>
+            </div>`).join('');
+    }
+
+    let barChartInstance = null;
+    let doughnutChartInstance = null;
+    let lineChartInstance = null;
+
+    function renderCharts() {
+        if (barChartInstance) barChartInstance.destroy();
+        if (doughnutChartInstance) doughnutChartInstance.destroy();
+        if (lineChartInstance) lineChartInstance.destroy();
+
+        // --- BAR CHART ---
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        barChartInstance = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: projects.map(p => p.name.substring(0, 16) + '...'),
+                datasets: [{
+                    label: 'Progreso (%)',
+                    data: projects.map(p => p.progress || 0),
+                    backgroundColor: [
+                        'rgba(79,70,229,0.7)', 'rgba(6,182,212,0.7)', 'rgba(245,158,11,0.7)',
+                        'rgba(16,185,129,0.7)', 'rgba(79,70,229,0.5)', 'rgba(239,68,68,0.6)'
+                    ],
+                    borderColor: [
+                        '#6366f1','#22d3ee','#fbbf24','#34d399','#818cf8','#f87171'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', font: { size: 10 } }, max: 100, beginAtZero: true }
+                }
+            }
+        });
+
+        // --- DOUGHNUT CHART ---
+        const completed = tasks.filter(t => t.status === 'done').length;
+        const active = tasks.filter(t => t.status === 'in_progress').length;
+        const pending = tasks.filter(t => t.status === 'pending').length;
+        const review = tasks.filter(t => t.status === 'review').length;
+
+        const doCtx = document.getElementById('doughnutChart').getContext('2d');
+        doughnutChartInstance = new Chart(doCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completadas', 'En Progreso', 'Pendientes', 'En Revisión'],
+                datasets: [{
+                    data: [completed || 5, active || 3, pending || 2, review || 1],
+                    backgroundColor: ['rgba(16,185,129,0.8)', 'rgba(6,182,212,0.8)', 'rgba(245,158,11,0.8)', 'rgba(139,92,246,0.8)'],
+                    borderColor: ['#10b981','#06b6d4','#f59e0b','#8b5cf6'],
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '65%',
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#94a3b8', padding: 10, font: { size: 11 } } }
+                }
+            }
+        });
+
+        // --- LINE CHART ---
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+        lineChartInstance = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: 'Tareas Completadas',
+                        data: [12, 19, 15, 27, 38, completed || 47],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99,102,241,0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { labels: { color: '#94a3b8' } } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    // --- ACTIVITY FEED ---
+    const activity = [
+        { dot: 'green', text: 'Laura Soto completó 3 pruebas del módulo de pagos', time: 'hace 20 min' },
+        { dot: 'blue', text: 'Carlos López subió el módulo de autenticación', time: 'hace 45 min' },
+        { dot: 'yellow', text: 'Nueva tarea creada: "Optimización de performance"', time: 'hace 1h' },
+        { dot: 'blue', text: 'Ana García creó el proyecto "Plataforma BI Analytics"', time: 'hace 2h' },
+    ];
+    document.getElementById('activityFeed').innerHTML = activity.map(a => `
+        <div class="notif-item unread">
+            <div class="notif-dot ${a.dot}"></div>
+            <p>${a.text}</p>
+            <span>${a.time}</span>
+        </div>`).join('');
+
+    async function refreshData() {
+        const btn = document.querySelector('.btn-primary');
+        btn.textContent = '⏳ Actualizando...';
+        await loadDashboardData();
+        btn.textContent = '🔄 Actualizar';
+    }
+
+    Chart.defaults.color = '#94a3b8';
+    loadDashboardData();
+</script>
 </body>
 </html>

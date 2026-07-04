@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Tareas | SGII - Innovatech</title>
+    <meta name="description" content="Crea, asigna y da seguimiento a tareas de proyectos en el SGII de Innovatech Solutions.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-layout">
+    <div id="sidebarContainer"></div>
+
+    <div class="main-content">
+        <div id="topbarContainer"></div>
+
+        <div class="page-content">
+            <!-- Page Header -->
+            <div class="page-header mb-24">
+                <div class="page-header-text">
+                    <h1>Gestión de Tareas</h1>
+                    <p>Los equipos pueden crear, asignar y dar seguimiento a tareas, mejorando la coordinación y el control del trabajo.</p>
+                </div>
+                <button id="newTaskBtn" class="btn-primary">＋ Nueva Tarea</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid mb-24">
+                <div class="stat-card blue">
+                    <div class="stat-icon-wrap blue">📋</div>
+                    <div class="stat-content">
+                        <h3>Total Tareas</h3>
+                        <p class="stat-number">83</p>
+                        <p class="stat-trend up">↑ Este sprint</p>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon-wrap green">✅</div>
+                    <div class="stat-content">
+                        <h3>Completadas</h3>
+                        <p class="stat-number">47</p>
+                        <p class="stat-trend up">↑ 56% completitud</p>
+                    </div>
+                </div>
+                <div class="stat-card cyan">
+                    <div class="stat-icon-wrap cyan">⚡</div>
+                    <div class="stat-content">
+                        <h3>En Progreso</h3>
+                        <p class="stat-number">12</p>
+                        <p class="stat-trend">Activas ahora</p>
+                    </div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-icon-wrap yellow">⏳</div>
+                    <div class="stat-content">
+                        <h3>Pendientes</h3>
+                        <p class="stat-number">21</p>
+                        <p class="stat-trend">Por iniciar</p>
+                    </div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-icon-wrap red">🚨</div>
+                    <div class="stat-content">
+                        <h3>Atrasadas</h3>
+                        <p class="stat-number">3</p>
+                        <p class="stat-trend down">↓ Requieren atención</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Toggle + Filters -->
+            <div class="filters-bar mb-16">
+                <div class="search-input-wrap">
+                    <span>🔍</span>
+                    <input type="text" id="taskSearch" placeholder="Buscar tareas...">
+                </div>
+                <select class="filter-select" id="projectFilter">
+                    <option value="">Todos los proyectos</option>
+                    <option value="1" selected>ERP Corporativo</option>
+                    <option value="2">App Móvil v2.0</option>
+                    <option value="3">Migración BD</option>
+                </select>
+                <select class="filter-select" id="statusTaskFilter">
+                    <option value="">Todos los estados</option>
+                    <option value="pending">Pendiente</option>
+                    <option value="in_progress">En Progreso</option>
+                    <option value="done">Completada</option>
+                </select>
+                <select class="filter-select" id="priorityFilter">
+                    <option value="">Todas las prioridades</option>
+                    <option value="high">Alta</option>
+                    <option value="medium">Media</option>
+                    <option value="low">Baja</option>
+                </select>
+                <div style="display:flex;gap:6px;margin-left:auto;">
+                    <button class="btn-icon view-btn active-view" id="listViewBtn" title="Vista lista" onclick="switchView('list')">☰</button>
+                    <button class="btn-icon view-btn" id="kanbanViewBtn" title="Vista Kanban" onclick="switchView('kanban')">⊞</button>
+                </div>
+            </div>
+
+            <!-- LIST VIEW -->
+            <div id="listView">
+                <div id="tasksList"></div>
+            </div>
+
+            <!-- KANBAN VIEW -->
+            <div id="kanbanView" style="display:none;">
+                <div class="kanban-board">
+                    <div class="kanban-col">
+                        <div class="kanban-col-header">
+                            <div class="kanban-col-title"><span class="col-dot" style="background:#f59e0b;"></span>Pendiente</div>
+                            <span class="col-count" id="k-pending-count">0</span>
+                        </div>
+                        <div id="k-pending"></div>
+                    </div>
+                    <div class="kanban-col">
+                        <div class="kanban-col-header">
+                            <div class="kanban-col-title"><span class="col-dot" style="background:#06b6d4;"></span>En Progreso</div>
+                            <span class="col-count" id="k-progress-count">0</span>
+                        </div>
+                        <div id="k-progress"></div>
+                    </div>
+                    <div class="kanban-col">
+                        <div class="kanban-col-header">
+                            <div class="kanban-col-title"><span class="col-dot" style="background:#a78bfa;"></span>Revisión</div>
+                            <span class="col-count" id="k-review-count">0</span>
+                        </div>
+                        <div id="k-review"></div>
+                    </div>
+                    <div class="kanban-col">
+                        <div class="kanban-col-header">
+                            <div class="kanban-col-title"><span class="col-dot" style="background:#10b981;"></span>Completada</div>
+                            <span class="col-count" id="k-done-count">0</span>
+                        </div>
+                        <div id="k-done"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nueva Tarea -->
+<div id="taskModal" class="modal">
+    <div class="modal-content">
+        <button class="close" onclick="document.getElementById('taskModal').style.display='none'">&times;</button>
+        <h2>Nueva Tarea</h2>
+        <form id="taskForm">
+            <div class="form-group">
+                <label for="taskTitle">Título de la Tarea *</label>
+                <input type="text" id="taskTitle" placeholder="Ej: Implementar módulo de login" required>
+            </div>
+            <div class="form-group">
+                <label for="taskDesc">Descripción</label>
+                <textarea id="taskDesc" rows="2" placeholder="Describe los criterios de aceptación..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="taskProject">Proyecto</label>
+                    <select id="taskProject">
+                        <option value="1">ERP Corporativo</option>
+                        <option value="2">App Móvil v2.0</option>
+                        <option value="3">Migración BD</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="taskStatus">Estado</label>
+                    <select id="taskStatus">
+                        <option value="pending">Pendiente</option>
+                        <option value="in_progress">En Progreso</option>
+                        <option value="done">Completada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="taskPriority">Prioridad</label>
+                    <select id="taskPriority">
+                        <option value="high">Alta</option>
+                        <option value="medium">Media</option>
+                        <option value="low">Baja</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="taskDue">Fecha Límite</label>
+                    <input type="date" id="taskDue">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="taskAssignee">Responsable</label>
+                <select id="taskAssignee">
+                    <option>Ana García</option>
+                    <option>Carlos López</option>
+                    <option>María Torres</option>
+                    <option>Pedro Ruiz</option>
+                    <option>Laura Soto</option>
+                    <option>Diego Mora</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Crear Tarea</button>
+        </form>
+    </div>
+</div>
+
+<script src="js/demo.js"></script>
+<script>
+    document.getElementById('sidebarContainer').innerHTML = buildSidebar('tasks');
+    document.getElementById('topbarContainer').innerHTML = buildTopbar('Gestión de Tareas', 'RF-002 · Seguimiento de Tareas');
+
+    let tasks = [];
+    let projectsList = [];
+    let usersList = [];
+    let currentView = 'list';
+
+    async function loadInitialData() {
+        // Cargar proyectos para el filtro y el modal
+        const projs = await apiRequest('/projects/');
+        if (projs) {
+            projectsList = projs;
+            const filterEl = document.getElementById('projectFilter');
+            const formEl = document.getElementById('taskProject');
+            
+            let filterHtml = '<option value="">Todos los proyectos</option>';
+            let formHtml = '';
+            projs.forEach(p => {
+                filterHtml += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
+                formHtml += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
+            });
+            filterEl.innerHTML = filterHtml;
+            formEl.innerHTML = formHtml;
+        }
+
+        // Cargar usuarios para el asignador
+        const users = await apiRequest('/users/');
+        if (users) {
+            usersList = users;
+            const assigneeEl = document.getElementById('taskAssignee');
+            let assigneesHtml = '<option value="">Sin Asignar</option>';
+            users.forEach(u => {
+                assigneesHtml += `<option value="${u.id}">${escapeHtml(u.full_name || u.username)}</option>`;
+            });
+            assigneeEl.innerHTML = assigneesHtml;
+        }
+
+        await loadTasks();
+    }
+
+    async function loadTasks() {
+        const data = await apiRequest('/tasks/');
+        if (data) {
+            tasks = data;
+        } else {
+            tasks = [...DEMO_TASKS];
+        }
+        applyFilters();
+    }
+
+    function getPriorityLabel(p) { return {high:'Alta',medium:'Media',low:'Baja'}[p]||p; }
+
+    function renderList(list) {
+        const el = document.getElementById('tasksList');
+        if (!list.length) { el.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><p style="color:var(--text-muted);">No se encontraron tareas.</p></div>'; return; }
+        el.innerHTML = list.map(t => {
+            const projName = projectsList.find(p=>p.id===t.project_id)?.name || 'Proyecto';
+            const assigneeName = t.assignee?.full_name || t.assignee?.username || 'Sin Asignar';
+            const initial = getInitials(assigneeName);
+            const color = t.assignee ? '#06b6d4' : '#64748b';
+            
+            return `
+            <div class="task-item">
+                <div class="task-checkbox ${t.status === 'done' ? 'done' : t.status === 'in_progress' ? 'progress' : ''}" onclick="toggleTaskStatus(${t.id}, '${t.status}')">
+                    ${t.status === 'done' ? '✓' : t.status === 'in_progress' ? '◑' : ''}
+                </div>
+                <div class="task-info">
+                    <h4 class="${t.status === 'done' ? 'done-text' : ''}">${escapeHtml(t.title)}</h4>
+                    <p>
+                        <span>📁 ${escapeHtml(projName)}</span>
+                        <span>📅 ${formatDate(t.due_date)}</span>
+                    </p>
+                </div>
+                <div class="task-meta">
+                    <span class="priority-badge priority-${t.priority}">${getPriorityLabel(t.priority)}</span>
+                    <span class="status-badge status-${t.status}">${getStatusLabel(t.status)}</span>
+                    <div class="assignee-avatar" style="background:${color};" title="${assigneeName}">${initial}</div>
+                    <button class="btn-delete" style="padding:4px 8px;" onclick="deleteTask(${t.id})">🗑️</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function toggleTaskStatus(id, currentStatus) {
+        let newStatus = 'in_progress';
+        if (currentStatus === 'pending') newStatus = 'in_progress';
+        else if (currentStatus === 'in_progress') newStatus = 'done';
+        else if (currentStatus === 'done') newStatus = 'pending';
+
+        const res = await apiRequest(`/tasks/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (res || DEMO_MODE) {
+            loadTasks();
+        }
+    }
+
+    async function deleteTask(id) {
+        if (!confirm('¿Estás seguro de eliminar esta tarea?')) return;
+        const res = await apiRequest(`/tasks/${id}`, { method: 'DELETE' });
+        if (res || DEMO_MODE) {
+            loadTasks();
+        }
+    }
+
+    function renderKanban(list) {
+        const groups = { pending: [], in_progress: [], review: [], done: [] };
+        list.forEach(t => { if (groups[t.status] !== undefined) groups[t.status].push(t); else groups.pending.push(t); });
+        ['pending','in_progress','review','done'].forEach(col => {
+            const colKey = col === 'in_progress' ? 'progress' : col;
+            const el = document.getElementById(`k-${colKey}`);
+            document.getElementById(`k-${colKey}-count`).textContent = groups[col].length;
+            el.innerHTML = groups[col].map(t => {
+                const assigneeName = t.assignee?.full_name || t.assignee?.username || 'Sin Asignar';
+                return `
+                <div class="kanban-card">
+                    <h4>${escapeHtml(t.title)}</h4>
+                    <p>${escapeHtml(t.description || '')}</p>
+                    <div class="kanban-card-footer">
+                        <span class="priority-badge priority-${t.priority}">${getPriorityLabel(t.priority)}</span>
+                        <div class="assignee-avatar" style="background:#06b6d4;width:24px;height:24px;font-size:10px;" title="${assigneeName}">${getInitials(assigneeName)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('taskSearch').value.toLowerCase();
+        const proj = document.getElementById('projectFilter').value;
+        const status = document.getElementById('statusTaskFilter').value;
+        const prio = document.getElementById('priorityFilter').value;
+        const list = tasks.filter(t =>
+            (!search || t.title.toLowerCase().includes(search)) &&
+            (!proj || t.project_id == proj) &&
+            (!status || t.status === status) &&
+            (!prio || t.priority === prio)
+        );
+        if (currentView === 'list') renderList(list);
+        else renderKanban(list);
+    }
+
+    function switchView(v) {
+        currentView = v;
+        document.getElementById('listView').style.display = v === 'list' ? 'block' : 'none';
+        document.getElementById('kanbanView').style.display = v === 'kanban' ? 'block' : 'none';
+        applyFilters();
+    }
+
+    document.getElementById('newTaskBtn').addEventListener('click', () => document.getElementById('taskModal').style.display = 'flex');
+    document.getElementById('taskForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const assigneeVal = document.getElementById('taskAssignee').value;
+        const data = {
+            project_id: parseInt(document.getElementById('taskProject').value),
+            title: document.getElementById('taskTitle').value,
+            description: document.getElementById('taskDesc').value,
+            status: document.getElementById('taskStatus').value,
+            priority: document.getElementById('taskPriority').value,
+            assignee_id: assigneeVal ? parseInt(assigneeVal) : null,
+            due_date: document.getElementById('taskDue').value ? new Date(document.getElementById('taskDue').value).toISOString() : null
+        };
+        const res = await apiRequest('/tasks/', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        if (res || DEMO_MODE) {
+            document.getElementById('taskModal').style.display = 'none';
+            document.getElementById('taskForm').reset();
+            loadTasks();
+        } else {
+            alert('Error al crear tarea');
+        }
+    });
+
+    ['taskSearch','projectFilter','statusTaskFilter','priorityFilter'].forEach(id => {
+        document.getElementById(id).addEventListener('change', applyFilters);
+        document.getElementById(id).addEventListener('input', applyFilters);
+    });
+
+    window.addEventListener('click', e => { if (e.target.id === 'taskModal') document.getElementById('taskModal').style.display = 'none'; });
+
+    loadInitialData();
+</script>
+</body>
+</html>
