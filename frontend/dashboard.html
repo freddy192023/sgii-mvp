@@ -6,6 +6,26 @@
     <title>Dashboard en Tiempo Real | SGII - Innovatech</title>
     <meta name="description" content="Panel de control con KPIs, gráficos de estado y proyectos activos del sistema SGII.">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // Definición global e inmediata de seguridad
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>

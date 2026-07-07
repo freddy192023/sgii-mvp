@@ -145,10 +145,36 @@
                 }
             } catch (error) {
                 console.warn('Backend offline, usando modo demostración local.', error);
-                // Fallback local en caso de desconexión
+                // Fallback local: buscar el usuario en DEMO_USERS para asignar el rol correcto
                 if (userVal && passVal) {
                     localStorage.setItem('access_token', 'demo-token-jwt-12345');
-                    localStorage.setItem('user', JSON.stringify({ username: 'ana.garcia', role: 'manager', full_name: 'Ana García' }));
+
+                    // Mapeo de usuarios demo (username o email → datos reales)
+                    const demoUserMap = {
+                        'admin': { username: 'admin', role: 'admin', full_name: 'Admin Sistema' },
+                        'admin@innovatech.com': { username: 'admin', role: 'admin', full_name: 'Admin Sistema' },
+                        'ana.garcia': { username: 'ana.garcia', role: 'manager', full_name: 'Ana García' },
+                        'ana.garcia@innovatech.com': { username: 'ana.garcia', role: 'manager', full_name: 'Ana García' },
+                        'carlos.lopez': { username: 'carlos.lopez', role: 'dev', full_name: 'Carlos López' },
+                        'carlos.lopez@innovatech.com': { username: 'carlos.lopez', role: 'dev', full_name: 'Carlos López' },
+                        'maria.torres': { username: 'maria.torres', role: 'dev', full_name: 'María Torres' },
+                        'maria.torres@innovatech.com': { username: 'maria.torres', role: 'dev', full_name: 'María Torres' },
+                        'pedro.ruiz': { username: 'pedro.ruiz', role: 'manager', full_name: 'Pedro Ruiz' },
+                        'pedro.ruiz@innovatech.com': { username: 'pedro.ruiz', role: 'manager', full_name: 'Pedro Ruiz' },
+                        'diego.mora': { username: 'diego.mora', role: 'dev', full_name: 'Diego Mora' },
+                        'diego.mora@innovatech.com': { username: 'diego.mora', role: 'dev', full_name: 'Diego Mora' },
+                        'laura.soto': { username: 'laura.soto', role: 'dev', full_name: 'Laura Soto' },
+                        'laura.soto@innovatech.com': { username: 'laura.soto', role: 'dev', full_name: 'Laura Soto' },
+                    };
+
+                    const key = userVal.toLowerCase().trim();
+                    const matchedUser = demoUserMap[key] || {
+                        username: userVal,
+                        role: 'dev',        // por defecto Dev (el más restrictivo) si no se reconoce
+                        full_name: userVal
+                    };
+
+                    localStorage.setItem('user', JSON.stringify(matchedUser));
                     window.location.href = 'dashboard.html';
                 } else {
                     alert('Por favor ingresa usuario y contraseña');

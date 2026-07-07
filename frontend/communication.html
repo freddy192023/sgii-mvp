@@ -6,6 +6,41 @@
     <title>Comunicación y Colaboración | SGII - Innovatech</title>
     <meta name="description" content="Módulo de mensajería interna y colaboración en tiempo real del SGII de Innovatech Solutions.">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // Definición global e inmediata de seguridad
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+        // Fallback para conversaciones DMs por defecto
+        if (typeof DEFAULT_PRIVATE_DMS === 'undefined') {
+            window.DEFAULT_PRIVATE_DMS = {
+                'Ana García <-> Carlos López': [
+                    { user: 'Ana García', initials: 'AG', color: '#6366f1', time: '09:00', text: 'Hola Carlos, ¿me puedes compartir el endpoint de la API de proyectos?' },
+                    { user: 'Carlos López', initials: 'CL', color: '#06b6d4', time: '09:02', text: 'Claro Ana, es GET /api/projects/ con el token en el header.' },
+                    { user: 'Ana García', initials: 'AG', color: '#6366f1', time: '09:04', text: 'Gracias, ya lo tengo funcionando 🎉' }
+                ],
+                'Ana García <-> María Torres': [
+                    { user: 'María Torres', initials: 'MT', color: '#10b981', time: '11:15', text: '¿Tienes un momento para revisar un error en el script de migración?' },
+                    { user: 'Ana García', initials: 'AG', color: '#6366f1', time: '11:18', text: 'Sí María, comparte el error y lo veo.' },
+                    { user: 'María Torres', initials: 'MT', color: '#10b981', time: '11:20', text: 'Es un ConstraintError en la FK de orders.' }
+                ]
+            };
+        }
+    </script>
 </head>
 <body>
 <div class="app-layout">
@@ -35,7 +70,10 @@
                 <div class="chat-channels">
                     <div class="chat-channels-header">
                         <span>Canales</span>
-                        <button class="btn-icon" title="Nuevo canal" onclick="alert('Crear nuevo canal')">＋</button>
+                        <div style="display:flex;gap:4px;">
+                            <button class="btn-icon" title="Nuevo Mensaje Directo" onclick="openDMSearch()" style="font-size:16px;">✉️</button>
+                            <button class="btn-icon" title="Nuevo canal" onclick="alert('Crear nuevo canal')" style="font-size:18px;">＋</button>
+                        </div>
                     </div>
                     <div class="channel-list">
                         <p style="font-size:10px;color:var(--text-muted);padding:4px 8px;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Proyectos</p>
@@ -106,6 +144,27 @@
                                 <p>⚡ Ocupada</p>
                             </div>
                         </div>
+                        <div class="channel-item" onclick="switchChannel(this, 'Pedro Ruiz', 'Gerente de Producto')">
+                            <div class="assignee-avatar" style="background:#f59e0b;width:28px;height:28px;font-size:11px;">PR</div>
+                            <div class="channel-info">
+                                <h4>Pedro Ruiz</h4>
+                                <p>🟢 En línea</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, 'Diego Mora', 'DevOps Engineer')">
+                            <div class="assignee-avatar" style="background:#8b5cf6;width:28px;height:28px;font-size:11px;">DM</div>
+                            <div class="channel-info">
+                                <h4>Diego Mora</h4>
+                                <p>🟢 En línea</p>
+                            </div>
+                        </div>
+                        <div class="channel-item" onclick="switchChannel(this, 'Laura Soto', 'QA Engineer')">
+                            <div class="assignee-avatar" style="background:#ef4444;width:28px;height:28px;font-size:11px;">LS</div>
+                            <div class="channel-info">
+                                <h4>Laura Soto</h4>
+                                <p>🔴 Ausente</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -154,36 +213,103 @@
 
 <style>
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.dm-search-modal { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center; }
+.dm-search-modal.open { display:flex; }
+.dm-search-box { background:var(--dark-2,#1e1e2e);border:1px solid var(--border,rgba(255,255,255,0.08));border-radius:16px;padding:24px;width:420px;max-height:80vh;display:flex;flex-direction:column;gap:12px; }
+.dm-search-box h3 { color:var(--text-primary,#f1f5f9);margin:0;font-size:16px; }
+.dm-search-box input { background:var(--dark-3,#252537);border:1px solid var(--border,rgba(255,255,255,0.08));color:var(--text-primary,#f1f5f9);border-radius:8px;padding:10px 14px;font-size:14px;width:100%;box-sizing:border-box; }
+.dm-user-list { overflow-y:auto;max-height:50vh;display:flex;flex-direction:column;gap:6px; }
+.dm-user-item { display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.2s; }
+.dm-user-item:hover { background:rgba(99,102,241,0.15); }
+.dm-user-item h4 { margin:0;font-size:14px;color:var(--text-primary,#f1f5f9); }
+.dm-user-item p { margin:0;font-size:12px;color:var(--text-muted,#64748b);text-transform:capitalize; }
 </style>
+
+<!-- Modal Nuevo Mensaje Directo -->
+<div id="dmSearchModal" class="dm-search-modal" onclick="if(event.target===this)closeDMSearch()">
+    <div class="dm-search-box">
+        <h3>💬 Nuevo Mensaje Directo</h3>
+        <input type="text" id="dmSearchInput" placeholder="Buscar usuario por nombre..." oninput="filterDMUsers(this.value)">
+        <div class="dm-user-list" id="dmUserList"></div>
+        <button onclick="closeDMSearch()" style="background:transparent;border:1px solid var(--border,rgba(255,255,255,0.1));color:var(--text-muted);border-radius:8px;padding:8px;cursor:pointer;">Cancelar</button>
+    </div>
+</div>
 
 <script src="js/demo.js"></script>
 <script>
     document.getElementById('sidebarContainer').innerHTML = buildSidebar('communication');
     document.getElementById('topbarContainer').innerHTML = buildTopbar('Comunicación', 'RF-005 · Mensajería Interna');
 
-    let currentChannel = 'general';
-    let messages = [];
+    let currentChannel = 'erp-corporativo';
+    let isDirectMessage = false;
+
+    // Fallback de seguridad en caso de que demo.js esté cacheado o bloqueado
+    if (typeof DEMO_MESSAGES === 'undefined') {
+        window.DEMO_MESSAGES = {
+            'erp-corporativo': [
+                { user: 'Ana García', initials: 'AG', color: '#6366f1', time: '09:14', text: 'Buenos días equipo 👋 Recordatorio: el sprint review es hoy a las 15:00.' },
+                { user: 'Carlos López', initials: 'CL', color: '#06b6d4', time: '09:18', text: '<span class="mention">@Ana García</span> Confirmado, ya tengo lista la demo del módulo de autenticación.' },
+                { user: 'Diego Mora', initials: 'DM', color: '#8b5cf6', time: '10:02', text: 'El pipeline de CI/CD ya está configurado. Los builds se ejecutan automáticamente.' }
+            ],
+            'general': [
+                { user: 'Ana García', initials: 'AG', color: '#6366f1', time: '08:00', text: '¡Buenos días a todos! Semana importante, tienen el sprint review el viernes.' }
+            ]
+        };
+    }
+
+    // Helper para generar una llave compuesta para DMs ordenados alfabéticamente (ej: "Ana García <-> Carlos López")
+    function getCompositeDMKey(targetUser) {
+        const currentUser = getCurrentUser();
+        const me = currentUser.full_name || currentUser.username;
+        if (!targetUser) return '';
+        const users = [me, targetUser].sort();
+        return `${users[0]} <-> ${users[1]}`;
+    }
 
     async function loadMessages() {
-        const data = await apiRequest(`/messages/?channel=${encodeURIComponent(currentChannel)}`);
-        if (data) {
-            messages = data.map(m => ({
+        let channelParam = currentChannel;
+        if (isDirectMessage) {
+            // En DMs, para el backend podemos mandar la llave compuesta o manejarlo localmente
+            channelParam = getCompositeDMKey(currentChannel);
+        }
+
+        // Intenta obtener del backend real primero
+        const data = await apiRequest(`/messages/?channel=${encodeURIComponent(channelParam)}`);
+        if (data && data.length > 0) {
+            // Backend respondió con datos reales → úsalos
+            const backendMessages = data.map(m => ({
                 user: m.sender.full_name || m.sender.username,
                 initials: getInitials(m.sender.full_name || m.sender.username),
                 color: m.sender.role === 'admin' ? '#ef4444' : '#06b6d4',
                 time: new Date(m.created_at).toLocaleTimeString('es-CL', {hour:'2-digit',minute:'2-digit'}),
                 text: m.content
             }));
+            renderMessages(backendMessages);
         } else {
-            messages = [...DEMO_MESSAGES];
+            // Modo demo: usar mensajes del canal actual del diccionario
+            if (isDirectMessage) {
+                const dmKey = getCompositeDMKey(currentChannel);
+                // Si existe en el diccionario mutable, úsalo. Si no, busca en las por defecto.
+                let channelMsgs = DEMO_MESSAGES[dmKey] || DEFAULT_PRIVATE_DMS[dmKey];
+                if (!channelMsgs) {
+                    // Inicializar conversación vacía
+                    channelMsgs = [
+                        { user: currentChannel, initials: getInitials(currentChannel), color: '#64748b', time: 'Ahora', text: `👋 ¡Hola! Iniciaste un chat privado con ${currentChannel}.` }
+                    ];
+                    DEMO_MESSAGES[dmKey] = channelMsgs;
+                }
+                renderMessages(channelMsgs);
+            } else {
+                const channelMsgs = DEMO_MESSAGES[currentChannel] || [];
+                renderMessages(channelMsgs);
+            }
         }
-        renderMessages(messages);
     }
 
     function renderMessages(list) {
         document.getElementById('chatMessages').innerHTML = list.map(m => `
             <div class="message">
-                <div class="message-avatar" style="background:${m.color || '#6366f1'};">${m.initials}</div>
+                <div class="message-avatar" style="background:${m.color || '#6366f1'}">${escapeHtml(m.initials)}</div>
                 <div class="message-content">
                     <div class="message-header">
                         <span class="message-name">${escapeHtml(m.user)}</span>
@@ -201,31 +327,232 @@
         const text = input.value.trim();
         if (!text) return;
 
+        let channelParam = currentChannel;
+        if (isDirectMessage) {
+            channelParam = getCompositeDMKey(currentChannel);
+        }
+
+        // Intentar guardar en el backend
         const res = await apiRequest('/messages/', {
             method: 'POST',
-            body: JSON.stringify({
-                channel: currentChannel,
-                content: text
-            })
+            body: JSON.stringify({ channel: channelParam, content: text })
         });
 
-        if (res || DEMO_MODE) {
+        if (res) {
+            // Backend guardó correctamente → recargar
             input.value = '';
             await loadMessages();
         } else {
-            alert('Error al enviar el mensaje');
+            // Modo demo: guardar localmente en el diccionario del canal correspondiente
+            const now = new Date().toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
+            const user = getCurrentUser();
+            const newMsg = {
+                user: user.full_name || user.username || 'Tú',
+                initials: getInitials(user.full_name || user.username || 'Tú'),
+                color: user.role === 'admin' ? '#ef4444' : '#4f46e5',
+                time: now,
+                text: escapeHtml(text)
+            };
+
+            if (isDirectMessage) {
+                const dmKey = getCompositeDMKey(currentChannel);
+                if (!DEMO_MESSAGES[dmKey]) {
+                    DEMO_MESSAGES[dmKey] = [...(DEFAULT_PRIVATE_DMS[dmKey] || [])];
+                }
+                DEMO_MESSAGES[dmKey].push(newMsg);
+            } else {
+                if (!DEMO_MESSAGES[currentChannel]) DEMO_MESSAGES[currentChannel] = [];
+                DEMO_MESSAGES[currentChannel].push(newMsg);
+            }
+
+            input.value = '';
+            await loadMessages();
         }
     }
 
     function switchChannel(el, name, desc) {
         document.querySelectorAll('.channel-item').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
-        currentChannel = name.replace('# ', '');
-        document.getElementById('chatChannelName').textContent = name;
+
+        // Determinar si es un canal público (#) o un mensaje directo
+        if (name.startsWith('# ')) {
+            isDirectMessage = false;
+            currentChannel = name.replace('# ', '');
+            document.getElementById('chatChannelName').textContent = name;
+        } else {
+            isDirectMessage = true;
+            currentChannel = name; // Nombre del usuario destino
+            document.getElementById('chatChannelName').textContent = `💬 ${name}`;
+        }
+
         document.getElementById('chatChannelDesc').textContent = desc;
         const badge = el.querySelector('.channel-badge');
         if (badge) badge.remove();
         loadMessages();
+    }
+
+    // ===== DM SEARCH FUNCTIONS =====
+    // ===== DM SEARCH FUNCTIONS =====
+    let allUsersForDM = [];
+    let customDMUsers = [];
+
+    // Cargar contactos personalizados persistidos en localStorage
+    function loadCustomDMUsers() {
+        const currentUser = getCurrentUser();
+        const username = currentUser.username || currentUser.full_name || 'default';
+        const key = `custom_dm_users_${username}`;
+        try {
+            customDMUsers = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (e) {
+            customDMUsers = [];
+        }
+    }
+
+    // Guardar un contacto personalizado persistido en localStorage
+    function saveCustomDMUser(userObj) {
+        const currentUser = getCurrentUser();
+        const username = currentUser.username || currentUser.full_name || 'default';
+        const key = `custom_dm_users_${username}`;
+        
+        // Evitar duplicados
+        if (!customDMUsers.some(u => u.name === userObj.name)) {
+            customDMUsers.push(userObj);
+            localStorage.setItem(key, JSON.stringify(customDMUsers));
+        }
+    }
+
+    // Renderizar los contactos de DM guardados
+    function renderSavedDMContacts() {
+        loadCustomDMUsers();
+        // Los contactos estáticos iniciales
+        const defaultContacts = [
+            { name: 'Ana García', role: 'Gerente de Proyectos', initials: 'AG', color: '#6366f1', status: '🟢 En línea' },
+            { name: 'Carlos López', role: 'Desarrollador Full Stack', initials: 'CL', color: '#06b6d4', status: '🟢 En línea' },
+            { name: 'María Torres', role: 'Desarrolladora Backend', initials: 'MT', color: '#10b981', status: '⚡ Ocupada' },
+            { name: 'Pedro Ruiz', role: 'Gerente de Producto', initials: 'PR', color: '#f59e0b', status: '🟢 En línea' },
+            { name: 'Diego Mora', role: 'DevOps Engineer', initials: 'DM', color: '#8b5cf6', status: '🟢 En línea' },
+            { name: 'Laura Soto', role: 'QA Engineer', initials: 'LS', color: '#ef4444', status: '🔴 Ausente' }
+        ];
+
+        // Combinar con los guardados en localStorage
+        const allContacts = [...defaultContacts];
+        customDMUsers.forEach(custom => {
+            if (!allContacts.some(c => c.name === custom.name)) {
+                allContacts.push({
+                    name: custom.name,
+                    role: custom.role === 'admin' ? 'Administrador' : custom.role === 'manager' ? 'Gerente' : custom.role === 'dev' ? 'Desarrollador' : 'Visualizador',
+                    initials: custom.initials,
+                    color: custom.color,
+                    status: '🟢 En línea' // Estado por defecto para nuevos agregados
+                });
+            }
+        });
+
+        // Limpiar sección de Mensajes Directos del sidebar y re-renderizar
+        // Busquemos el párrafo que dice "Mensajes Directos"
+        const dmTitleEl = Array.from(document.querySelectorAll('.channel-list p')).find(el => el.textContent === 'Mensajes Directos');
+        if (dmTitleEl) {
+            // Eliminar todos los elementos hermanos que no sean títulos
+            let next = dmTitleEl.nextElementSibling;
+            while (next && next.tagName !== 'P') {
+                const toRemove = next;
+                next = next.nextElementSibling;
+                toRemove.remove();
+            }
+
+            // Insertar los elementos actualizados
+            allContacts.forEach(contact => {
+                const newItem = document.createElement('div');
+                newItem.className = 'channel-item';
+                // Si este es el canal seleccionado actualmente, marcarlo como activo
+                if (isDirectMessage && currentChannel === contact.name) {
+                    newItem.className += ' active';
+                }
+                newItem.innerHTML = `
+                    <div class="assignee-avatar" style="background:${contact.color};width:28px;height:28px;font-size:11px;">${contact.initials}</div>
+                    <div class="channel-info">
+                        <h4>${escapeHtml(contact.name)}</h4>
+                        <p>${contact.status}</p>
+                    </div>`;
+                newItem.onclick = () => switchChannel(newItem, contact.name, contact.role);
+                dmTitleEl.parentNode.insertBefore(newItem, next);
+            });
+        }
+    }
+
+    async function openDMSearch() {
+        // Intentar cargar desde el backend
+        const data = await apiRequest('/users/');
+        if (data && data.length > 0) {
+            allUsersForDM = data.map(u => ({
+                name: u.full_name || u.username,
+                role: u.role || 'dev',
+                initials: getInitials(u.full_name || u.username),
+                color: u.role === 'admin' ? '#ef4444' : u.role === 'manager' ? '#6366f1' : u.role === 'viewer' ? '#64748b' : '#06b6d4'
+            }));
+        } else {
+            // Modo demo: usar DEMO_USERS
+            allUsersForDM = DEMO_USERS.map(u => ({
+                name: u.name,
+                role: u.role,
+                initials: u.initials,
+                color: u.color
+            }));
+        }
+        document.getElementById('dmSearchModal').classList.add('open');
+        document.getElementById('dmSearchInput').value = '';
+        renderDMUsers(allUsersForDM);
+        setTimeout(() => document.getElementById('dmSearchInput').focus(), 100);
+    }
+
+    function closeDMSearch() {
+        document.getElementById('dmSearchModal').classList.remove('open');
+    }
+
+    function renderDMUsers(list) {
+        const roleLabels = { admin: 'Administrador', manager: 'Gerente', dev: 'Desarrollador', viewer: 'Visualizador' };
+        document.getElementById('dmUserList').innerHTML = list.length === 0
+            ? '<p style="color:var(--text-muted);text-align:center;padding:16px;">No se encontraron usuarios</p>'
+            : list.map(u => `
+                <div class="dm-user-item" onclick="startDMWith('${escapeHtml(u.name)}', '${u.initials}', '${u.color}', '${u.role}')">
+                    <div class="assignee-avatar" style="background:${u.color};width:36px;height:36px;font-size:13px;flex-shrink:0;">${u.initials}</div>
+                    <div>
+                        <h4>${escapeHtml(u.name)}</h4>
+                        <p>${roleLabels[u.role] || u.role}</p>
+                    </div>
+                </div>`).join('');
+    }
+
+    function filterDMUsers(query) {
+        const q = query.toLowerCase();
+        renderDMUsers(q ? allUsersForDM.filter(u => u.name.toLowerCase().includes(q)) : allUsersForDM);
+    }
+
+    function startDMWith(userName, initials, color, role) {
+        closeDMSearch();
+        // Guardar contacto en localStorage para persistencia
+        saveCustomDMUser({ name: userName, initials, color, role });
+
+        // Inicializar conversación vacía si no existe
+        const dmKey = getCompositeDMKey(userName);
+        if (!DEMO_MESSAGES[dmKey] && !DEFAULT_PRIVATE_DMS[dmKey]) {
+            DEMO_MESSAGES[dmKey] = [
+                { user: userName, initials, color, time: new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
+                  text: '👋 ¡Hola! Puedes escribir tu primer mensaje.' }
+            ];
+        }
+
+        // Renderizar el sidebar actualizado para que aparezca el usuario de inmediato
+        renderSavedDMContacts();
+
+        // Buscar el elemento recién renderizado en el sidebar y activarlo
+        const existingItems = document.querySelectorAll('.channel-item');
+        existingItems.forEach(item => {
+            const h4 = item.querySelector('h4');
+            if (h4 && h4.textContent === userName) {
+                switchChannel(item, userName, role);
+            }
+        });
     }
 
     document.getElementById('messageInput').addEventListener('keydown', e => {
@@ -235,6 +562,14 @@
     // Auto-poll messages every 4 seconds for real-time demonstration feel
     setInterval(loadMessages, 4000);
 
+    // RBAC: Visualizador no puede usar comunicación
+    if (!hasPermission('use_communication')) {
+        document.querySelector('.chat-input-area').innerHTML =
+            '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px;">🔒 Tu rol de <strong>Visualizador</strong> no tiene acceso a mensajería interna.</div>';
+    }
+
+    // Inicializar contactos desde localStorage
+    renderSavedDMContacts();
     loadMessages();
 </script>
 </body>

@@ -19,8 +19,9 @@ def get_tasks(
     if project_id:
         query = query.filter(Task.project_id == project_id)
     else:
-        # En una gestión normal, podemos ver tareas de proyectos propios
-        query = query.join(Project).filter(Project.owner_id == current_user.id)
+        # Los roles del equipo (admin, manager, dev, viewer) ven todas las tareas del sistema para su correcto seguimiento
+        if current_user.role not in ["admin", "manager", "dev", "viewer"]:
+            query = query.join(Project).filter(Project.owner_id == current_user.id)
     return query.all()
 
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -61,6 +62,13 @@ def update_task(
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Tarea no encontrada")
+        
+    # Restricción: Si el rol es Desarrollador (dev), solo puede editar la tarea si está asignada a él
+    if current_user.role == "dev" and db_task.assignee_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Restricción: Como Desarrollador, solo puedes modificar las tareas asignadas a ti."
+        )
         
     for key, value in task_update.model_dump(exclude_unset=True).items():
         setattr(db_task, key, value)

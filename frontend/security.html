@@ -6,6 +6,26 @@
     <title>Seguridad y Autenticación | SGII - Innovatech</title>
     <meta name="description" content="Panel de gestión de usuarios, roles y seguridad JWT del SGII de Innovatech Solutions.">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // Definición global e inmediata de seguridad
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    </script>
 </head>
 <body>
 <div class="app-layout">
@@ -21,7 +41,7 @@
                     <h1>Seguridad y Autenticación</h1>
                     <p>La autenticación con JWT y el control de acceso basado en roles aseguran el cumplimiento de normativas como GDPR y HIPAA.</p>
                 </div>
-                <button class="btn-primary" onclick="document.getElementById('userModal').style.display='flex'">＋ Nuevo Usuario</button>
+                <button id="btnNuevoUsuario" class="btn-primary" onclick="crearUsuario()">＋ Nuevo Usuario</button>
             </div>
 
             <!-- Security Info Cards -->
@@ -214,6 +234,27 @@
 
 <script src="js/demo.js"></script>
 <script>
+    // Fallback de seguridad en caso de que demo.js esté cacheado por el navegador
+    if (typeof hasPermission === 'undefined') {
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    }
+
     document.getElementById('sidebarContainer').innerHTML = buildSidebar('security');
     document.getElementById('topbarContainer').innerHTML = buildTopbar('Seguridad y Autenticación', 'RF-008 · Gestión de Usuarios y Seguridad');
 
@@ -227,19 +268,35 @@
     };
 
     async function loadUsersData() {
-        const data = await apiRequest('/users/');
-        if (data) {
-            users = data.map(u => ({
-                id: u.id,
-                name: u.full_name || u.username,
-                email: u.email,
-                role: u.role || 'dev',
-                last_login: u.created_at ? formatDate(u.created_at) : 'Sin acceso reciente',
-                status: u.is_active ? 'active' : 'inactive',
-                initials: getInitials(u.full_name || u.username),
-                color: u.role === 'admin' ? '#ef4444' : u.role === 'manager' ? '#6366f1' : '#06b6d4'
-            }));
-        } else {
+        try {
+            const data = await apiRequest('/users/');
+            if (data && data.length > 0) {
+                users = data.map(u => {
+                    let formattedDate = 'Sin acceso reciente';
+                    try {
+                        if (u.created_at) {
+                            formattedDate = formatDate(u.created_at);
+                        }
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                    const roleVal = (u.role || 'dev').toLowerCase();
+                    return {
+                        id: u.id,
+                        name: u.full_name || u.username,
+                        email: u.email,
+                        role: roleVal,
+                        last_login: formattedDate,
+                        status: u.is_active !== false ? 'active' : 'inactive',
+                        initials: getInitials(u.full_name || u.username),
+                        color: roleVal === 'admin' ? '#ef4444' : roleVal === 'manager' ? '#6366f1' : '#06b6d4'
+                    };
+                });
+            } else {
+                users = [...DEMO_USERS];
+            }
+        } catch (err) {
+            console.error("Error loading users data:", err);
             users = [...DEMO_USERS];
         }
         renderUsers(users);
@@ -247,16 +304,20 @@
     }
 
     function renderUsers(list) {
-        document.getElementById('usersTableBody').innerHTML = list.map(u => `
+        const canManage = hasPermission('manage_roles');
+        document.getElementById('usersTableBody').innerHTML = list.map(u => {
+            const roleKey = (u.role || 'dev').toLowerCase();
+            const badge = roleBadgeMap[roleKey] || `<span class="security-badge badge-dev">${roleKey}</span>`;
+            return `
             <tr>
                 <td>
                     <div class="user-cell">
-                        <div class="avatar" style="background:${u.color};width:32px;height:32px;font-size:12px;">${u.initials}</div>
+                        <div class="avatar" style="background:${u.color || '#06b6d4'};width:32px;height:32px;font-size:12px;">${u.initials || 'U'}</div>
                         <span style="color:var(--text-primary);font-weight:500;">${escapeHtml(u.name)}</span>
                     </div>
                 </td>
                 <td>${escapeHtml(u.email)}</td>
-                <td>${roleBadgeMap[u.role] || u.role}</td>
+                <td>${badge}</td>
                 <td>${u.last_login}</td>
                 <td>
                     <span class="status-badge ${u.status === 'active' ? 'status-active' : 'status-cancelled'}">
@@ -264,27 +325,52 @@
                     </span>
                 </td>
                 <td>
-                    <div style="display:flex;gap:6px;">
-                        <select onchange="updateUserRole(${u.id}, this.value)" style="background:var(--dark-3);color:var(--text-primary);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-size:11px;">
-                            <option value="dev" ${u.role==='dev'?'selected':''}>Dev</option>
-                            <option value="manager" ${u.role==='manager'?'selected':''}>Manager</option>
-                            <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
-                            <option value="viewer" ${u.role==='viewer'?'selected':''}>Viewer</option>
-                        </select>
-                    </div>
+                    ${canManage
+                        ? `<select onchange="updateUserRole(${u.id}, this.value)" style="background:var(--dark-3);color:var(--text-primary);border:1px solid var(--border);padding:2px 6px;border-radius:4px;font-size:11px;">
+                                <option value="dev" ${roleKey==='dev'?'selected':''}>Dev</option>
+                                <option value="manager" ${roleKey==='manager'?'selected':''}>Manager</option>
+                                <option value="admin" ${roleKey==='admin'?'selected':''}>Admin</option>
+                                <option value="viewer" ${roleKey==='viewer'?'selected':''}>Viewer</option>
+                           </select>`
+                        : `<span title="🔒 Solo Administradores pueden cambiar roles"
+                                style="background:var(--dark-3);color:var(--text-muted);border:1px solid var(--border);padding:2px 10px;border-radius:4px;font-size:11px;opacity:0.5;cursor:not-allowed;text-transform:capitalize;">
+                                ${roleKey}
+                           </span>`
+                    }
                 </td>
-            </tr>`).join('');
+            </tr>`;
+        }).join('');
     }
 
     async function updateUserRole(userId, newRole) {
-        const res = await apiRequest(`/users/${userId}/role?role=${newRole}`, {
-            method: 'PUT'
-        });
+        // RBAC: solo admins pueden cambiar roles
+        if (!hasPermission('manage_roles')) {
+            denyAccess('manage_roles');
+            loadUsersData(); // revertir visualmente
+            return;
+        }
+        const res = await apiRequest(`/users/${userId}/role?role=${newRole}`, { method: 'PUT' });
         if (res || DEMO_MODE) {
-            alert('✅ Rol actualizado exitosamente en el backend.');
-            loadUsersData();
+            // Actualizar en demo local
+            const u = users.find(u => u.id === userId);
+            if (u) u.role = newRole.toLowerCase();
+            // Agregar al log de auditoría
+            const auditLog = document.getElementById('auditLog');
+            const now = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+            const roleLabels = { admin:'Administrador', manager:'Gerente', dev:'Desarrollador', viewer:'Visualizador' };
+            const newEntry = document.createElement('div');
+            newEntry.className = 'notif-item unread';
+            newEntry.innerHTML = `<div class="notif-dot blue"></div><p>Rol de <strong>${users.find(u=>u.id===userId)?.name || 'Usuario'}</strong> cambiado a <strong>${roleLabels[newRole] || newRole}</strong></p><span>${now}</span>`;
+            auditLog.prepend(newEntry);
+            
+            // Actualizar en DEMO_USERS si estamos en modo demo
+            if (DEMO_MODE) {
+                const demoUser = DEMO_USERS.find(du => du.id === userId);
+                if (demoUser) demoUser.role = newRole.toLowerCase();
+            }
+            renderUsers(users);
         } else {
-            alert('Solo administradores pueden cambiar roles');
+            alert('Error al actualizar el rol.');
             loadUsersData();
         }
     }
@@ -294,15 +380,22 @@
         renderUsers(val ? users.filter(u => u.role === val) : users);
     });
 
+    // Función crearUsuario (RBAC-protegida)
+    function crearUsuario() {
+        if (!hasPermission('manage_users')) { denyAccess('manage_users'); return; }
+        document.getElementById('userModal').style.display = 'flex';
+    }
+
     // Formulario de creación de usuario
     document.getElementById('userModalForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        const rawRole = document.getElementById('newRole').value;
         const data = {
             username: document.getElementById('newUsername').value,
             email: document.getElementById('newEmail').value,
             full_name: document.getElementById('newFullName').value,
             password: document.getElementById('newPassword').value,
-            role: document.getElementById('newRole').value
+            role: rawRole.toLowerCase()
         };
 
         const res = await apiRequest('/users/', {
@@ -311,9 +404,24 @@
         });
 
         if (res || DEMO_MODE) {
+            // Guardar localmente en DEMO_USERS si no hay backend activo
+            if (DEMO_MODE || !res) {
+                const newId = DEMO_USERS.length ? Math.max(...DEMO_USERS.map(du=>du.id)) + 1 : 1;
+                const initials = data.full_name.split(' ').map(n=>n[0]).join('').toUpperCase();
+                DEMO_USERS.push({
+                    id: newId,
+                    name: data.full_name,
+                    email: data.email,
+                    role: data.role,
+                    last_login: 'Nunca',
+                    status: 'active',
+                    initials: initials || 'U',
+                    color: data.role === 'admin' ? '#ef4444' : data.role === 'manager' ? '#6366f1' : '#06b6d4'
+                });
+            }
             document.getElementById('userModal').style.display = 'none';
             document.getElementById('userModalForm').reset();
-            loadUsersData();
+            loadUsersData().then(() => applySecurityRBAC());
         } else {
             alert('Error al crear usuario. Comprueba permisos.');
         }
@@ -336,7 +444,43 @@
 
     window.addEventListener('click', e => { if (e.target.id === 'userModal') document.getElementById('userModal').style.display = 'none'; });
 
-    loadUsersData();
+    // ===== RBAC: aplicar restricciones segun rol =====
+    function applySecurityRBAC() {
+        // Asegurar que el filtro inicia en "Todos los roles"
+        document.getElementById('roleTableFilter').value = "";
+        
+        const isAdmin = hasPermission('manage_users');
+        // Boton Nuevo Usuario
+        const btnNuevo = document.getElementById('btnNuevoUsuario');
+        if (!isAdmin) {
+            btnNuevo.disabled = true;
+            btnNuevo.title = '🔒 Solo Administradores pueden crear usuarios';
+            btnNuevo.style.cssText += ';opacity:0.4;cursor:not-allowed;';
+            btnNuevo.onclick = () => denyAccess('manage_users');
+        } else {
+            btnNuevo.onclick = () => { document.getElementById('userModal').style.display = 'flex'; };
+        }
+        // Selectores de cambio de rol en la tabla
+        if (!isAdmin) {
+            document.querySelectorAll('#usersTableBody select').forEach(sel => {
+                sel.disabled = true;
+                sel.title = '🔒 Solo Administradores pueden cambiar roles';
+                sel.style.opacity = '0.4';
+                sel.style.cursor = 'not-allowed';
+            });
+        }
+        // Banner informativo si no es admin
+        if (!isAdmin) {
+            const user = getCurrentUser();
+            const roleLabels = { manager:'Gerente', dev:'Desarrollador', viewer:'Visualizador' };
+            const banner = document.createElement('div');
+            banner.style.cssText = 'background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#fbbf24;display:flex;align-items:center;gap:8px;';
+            banner.innerHTML = `⚠️ Estás en modo <strong>${roleLabels[user.role] || user.role}</strong>. Algunas acciones están restringidas. Contacta al Administrador para cambios de rol.`;
+            document.querySelector('.page-content').insertBefore(banner, document.querySelector('.security-info-cards'));
+        }
+    }
+
+    loadUsersData().then(() => applySecurityRBAC());
 </script>
 </body>
 </html>

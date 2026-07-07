@@ -6,6 +6,26 @@
     <title>Gestión de Proyectos | SGII - Innovatech</title>
     <meta name="description" content="Crea, edita y gestiona proyectos de forma centralizada en el SGII de Innovatech Solutions.">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // Definición global e inmediata de seguridad
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    </script>
 </head>
 <body>
 <div class="app-layout">
@@ -124,7 +144,9 @@
                 </div>
                 <div class="form-group">
                     <label for="projectOwner">Responsable</label>
-                    <input type="text" id="projectOwner" placeholder="Nombre del gerente">
+                    <select id="projectOwner">
+                        <!-- Se llena dinámicamente con los usuarios del sistema -->
+                    </select>
                 </div>
             </div>
             <button type="submit" class="btn-primary" id="submitBtn">Crear Proyecto</button>
@@ -134,6 +156,27 @@
 
 <script src="js/demo.js"></script>
 <script>
+    // Fallback de seguridad en caso de que demo.js esté cacheado por el navegador
+    if (typeof hasPermission === 'undefined') {
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    }
+
     // Build layout
     document.getElementById('sidebarContainer').innerHTML = buildSidebar('projects');
     document.getElementById('topbarContainer').innerHTML = buildTopbar('Gestión de Proyectos', 'RF-001 · Gestión de Proyectos');
@@ -188,6 +231,12 @@
         const p = projects.find(x => x.id === id);
         if (!p) return;
         editingId = id;
+        
+        // Cargar los responsables en el select y pre-seleccionar el dueño actual
+        await loadOwnerOptions();
+        const ownerName = p.owner || '';
+        document.getElementById('projectOwner').value = ownerName;
+
         document.getElementById('projectName').value = p.name;
         document.getElementById('projectDescription').value = p.description || '';
         document.getElementById('projectStartDate').value = p.start_date ? p.start_date.substring(0, 10) : '';
@@ -199,7 +248,8 @@
     }
 
     async function deleteProject(id) {
-        if (!confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return;
+        if (!hasPermission('delete_project')) { denyAccess('delete_project'); return; }
+        if (!confirm('\u00bfEliminar este proyecto? Esta acci\u00f3n no se puede deshacer.')) return;
         const res = await apiRequest(`/projects/${id}`, { method: 'DELETE' });
         if (res || DEMO_MODE) {
             projects = projects.filter(p => p.id !== id);
@@ -231,10 +281,37 @@
         document.getElementById('completedCount').textContent = projects.filter(p => p.status === 'completed').length;
     }
 
+    // ===== Cargar usuarios en el selector de Responsable =====
+    async function loadOwnerOptions() {
+        const usersData = await apiRequest('/users/');
+        const sourceUsers = (usersData && usersData.length) ? usersData : DEMO_USERS;
+        const currentUser = getCurrentUser();
+        const ownerSelect = document.getElementById('projectOwner');
+        ownerSelect.innerHTML = sourceUsers.map(u => {
+            const name = u.full_name || u.name || u.username;
+            const selected = name === (currentUser.full_name || currentUser.username) ? 'selected' : '';
+            return `<option value="${escapeHtml(name)}" ${selected}>${escapeHtml(name)}</option>`;
+        }).join('');
+    }
+
     document.getElementById('createProjectBtn').addEventListener('click', () => {
+        if (!hasPermission('create_project')) { denyAccess('create_project'); return; }
         closeModal();
+        // Auto-fill fecha de inicio con hoy
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('projectStartDate').value = today;
+        document.getElementById('projectEndDate').value = '';
+        loadOwnerOptions();
         document.getElementById('projectModal').style.display = 'flex';
     });
+
+    // RBAC visual: atenuar botón si no tiene permiso
+    if (!hasPermission('create_project')) {
+        const btn = document.getElementById('createProjectBtn');
+        btn.style.opacity = '0.4';
+        btn.style.cursor = 'not-allowed';
+        btn.title = '\ud83d\udd12 Tu rol (Dev/Viewer) no permite crear proyectos';
+    }
 
     document.getElementById('searchInput').addEventListener('input', applyFilters);
     document.getElementById('statusFilter').addEventListener('change', applyFilters);
@@ -264,8 +341,24 @@
         }
 
         if (result || DEMO_MODE) {
+            // En modo demo: agregar el proyecto al arreglo local
+            if (DEMO_MODE && !editingId) {
+                const newProject = {
+                    id: Date.now(),
+                    ...data,
+                    owner: document.getElementById('projectOwner').value,
+                    progress: 0
+                };
+                projects.push(newProject);
+                applyFilters();
+            } else if (DEMO_MODE && editingId) {
+                const idx = projects.findIndex(p => p.id === editingId);
+                if (idx !== -1) Object.assign(projects[idx], data);
+                applyFilters();
+            } else {
+                loadProjectsData();
+            }
             closeModal();
-            loadProjectsData();
         } else {
             alert('Error al guardar proyecto');
         }

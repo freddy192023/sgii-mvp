@@ -16,7 +16,12 @@ def get_projects(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    projects = db.query(Project).filter(Project.owner_id == current_user.id).offset(skip).limit(limit).all()
+    # Los administradores y gerentes ven todos los proyectos.
+    # Para la demo, permitimos que los desarrolladores y visualizadores también vean todos los proyectos (transparencia y selección de tareas)
+    if current_user.role in ["admin", "manager", "dev", "viewer"]:
+        projects = db.query(Project).offset(skip).limit(limit).all()
+    else:
+        projects = db.query(Project).filter(Project.owner_id == current_user.id).offset(skip).limit(limit).all()
     return projects
 
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
@@ -40,12 +45,13 @@ def get_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.owner_id == current_user.id
-    ).first()
+    project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+    
+    # Restricción: Los devs/viewers solo leen, managers/admins administran todo.
+    if current_user.role not in ["admin", "manager", "dev", "viewer"] and project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes acceso a este proyecto")
     return project
 
 @router.put("/{project_id}", response_model=ProjectResponse)
@@ -55,12 +61,13 @@ def update_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.owner_id == current_user.id
-    ).first()
+    project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        
+    # Validar permisos de edición (admin, manager, o dueño del proyecto)
+    if current_user.role not in ["admin", "manager"] and project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes permisos para modificar este proyecto")
     
     for key, value in project_update.model_dump(exclude_unset=True).items():
         setattr(project, key, value)
@@ -75,12 +82,13 @@ def delete_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    project = db.query(Project).filter(
-        Project.id == project_id,
-        Project.owner_id == current_user.id
-    ).first()
+    project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Proyecto no encontrado")
+        
+    # Validar permisos de eliminación (solo admin, manager, o dueño del proyecto)
+    if current_user.role not in ["admin", "manager"] and project.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="No tienes permisos para eliminar este proyecto")
     
     db.delete(project)
     db.commit()

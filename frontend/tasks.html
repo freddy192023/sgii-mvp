@@ -6,6 +6,26 @@
     <title>Gestión de Tareas | SGII - Innovatech</title>
     <meta name="description" content="Crea, asigna y da seguimiento a tareas de proyectos en el SGII de Innovatech Solutions.">
     <link rel="stylesheet" href="css/style.css">
+    <script>
+        // Definición global e inmediata de seguridad
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    </script>
 </head>
 <body>
 <div class="app-layout">
@@ -30,7 +50,7 @@
                     <div class="stat-icon-wrap blue">📋</div>
                     <div class="stat-content">
                         <h3>Total Tareas</h3>
-                        <p class="stat-number">83</p>
+                        <p class="stat-number" id="statTotalTasks">0</p>
                         <p class="stat-trend up">↑ Este sprint</p>
                     </div>
                 </div>
@@ -38,15 +58,15 @@
                     <div class="stat-icon-wrap green">✅</div>
                     <div class="stat-content">
                         <h3>Completadas</h3>
-                        <p class="stat-number">47</p>
-                        <p class="stat-trend up">↑ 56% completitud</p>
+                        <p class="stat-number" id="statCompletedTasks">0</p>
+                        <p class="stat-trend up" id="statCompletedPercent">0% completitud</p>
                     </div>
                 </div>
                 <div class="stat-card cyan">
                     <div class="stat-icon-wrap cyan">⚡</div>
                     <div class="stat-content">
                         <h3>En Progreso</h3>
-                        <p class="stat-number">12</p>
+                        <p class="stat-number" id="statInProgressTasks">0</p>
                         <p class="stat-trend">Activas ahora</p>
                     </div>
                 </div>
@@ -54,7 +74,7 @@
                     <div class="stat-icon-wrap yellow">⏳</div>
                     <div class="stat-content">
                         <h3>Pendientes</h3>
-                        <p class="stat-number">21</p>
+                        <p class="stat-number" id="statPendingTasks">0</p>
                         <p class="stat-trend">Por iniciar</p>
                     </div>
                 </div>
@@ -62,7 +82,7 @@
                     <div class="stat-icon-wrap red">🚨</div>
                     <div class="stat-content">
                         <h3>Atrasadas</h3>
-                        <p class="stat-number">3</p>
+                        <p class="stat-number" id="statOverdueTasks">0</p>
                         <p class="stat-trend down">↓ Requieren atención</p>
                     </div>
                 </div>
@@ -204,6 +224,27 @@
 
 <script src="js/demo.js"></script>
 <script>
+    // Fallback de seguridad en caso de que demo.js esté cacheado por el navegador
+    if (typeof hasPermission === 'undefined') {
+        window.getCurrentUser = function() {
+            return JSON.parse(localStorage.getItem('user') || '{"full_name":"Ana García","role":"manager","username":"ana.garcia"}');
+        };
+        window.hasPermission = function(action) {
+            const user = getCurrentUser();
+            const role = (user.role || 'viewer').toLowerCase();
+            const perms = {
+                admin:   ['manage_users', 'manage_roles', 'create_project', 'edit_project', 'delete_project', 'create_task', 'edit_task', 'delete_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data', 'view_security'],
+                manager: ['create_project', 'edit_project', 'create_task', 'edit_task', 'view_all_projects', 'view_dashboard', 'use_communication', 'assign_resources', 'approve_tasks', 'export_data'],
+                dev:     ['view_assigned_projects', 'view_all_projects', 'create_task', 'edit_task', 'view_dashboard', 'use_communication'],
+                viewer:  ['view_all_projects', 'view_dashboard']
+            };
+            return (perms[role] || []).includes(action);
+        };
+        window.denyAccess = function() {
+            alert('🔒 Acceso restringido\n\nTu rol actual no tiene permisos suficientes para esta acción.');
+        };
+    }
+
     document.getElementById('sidebarContainer').innerHTML = buildSidebar('tasks');
     document.getElementById('topbarContainer').innerHTML = buildTopbar('Gestión de Tareas', 'RF-002 · Seguimiento de Tareas');
 
@@ -213,41 +254,42 @@
     let currentView = 'list';
 
     async function loadInitialData() {
-        // Cargar proyectos para el filtro y el modal
-        const projs = await apiRequest('/projects/');
-        if (projs) {
-            projectsList = projs;
-            const filterEl = document.getElementById('projectFilter');
-            const formEl = document.getElementById('taskProject');
-            
-            let filterHtml = '<option value="">Todos los proyectos</option>';
-            let formHtml = '';
-            projs.forEach(p => {
-                filterHtml += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
-                formHtml += `<option value="${p.id}">${escapeHtml(p.name)}</option>`;
-            });
-            filterEl.innerHTML = filterHtml;
-            formEl.innerHTML = formHtml;
-        }
+        const currentUser = getCurrentUser();
 
-        // Cargar usuarios para el asignador
-        const users = await apiRequest('/users/');
-        if (users) {
-            usersList = users;
-            const assigneeEl = document.getElementById('taskAssignee');
-            let assigneesHtml = '<option value="">Sin Asignar</option>';
-            users.forEach(u => {
-                assigneesHtml += `<option value="${u.id}">${escapeHtml(u.full_name || u.username)}</option>`;
-            });
-            assigneeEl.innerHTML = assigneesHtml;
-        }
+        // Cargar proyectos (fallback a DEMO_PROJECTS si el backend no responde)
+        const projs = await apiRequest('/projects/');
+        projectsList = (projs && projs.length) ? projs : DEMO_PROJECTS;
+        const filterEl = document.getElementById('projectFilter');
+        const formEl  = document.getElementById('taskProject');
+        let filterHtml = '<option value="">Todos los proyectos</option>';
+        let formHtml = '';
+        projectsList.forEach(p => {
+            const name = escapeHtml(p.name);
+            filterHtml += `<option value="${p.id}">${name}</option>`;
+            formHtml   += `<option value="${p.id}">${name}</option>`;
+        });
+        filterEl.innerHTML = filterHtml;
+        formEl.innerHTML   = formHtml;
+
+        // Cargar usuarios (fallback a DEMO_USERS si el backend no responde)
+        const usersData = await apiRequest('/users/');
+        usersList = (usersData && usersData.length) ? usersData : DEMO_USERS;
+        const assigneeEl = document.getElementById('taskAssignee');
+        let assigneesHtml = '<option value="">Sin Asignar</option>';
+        usersList.forEach(u => {
+            const name = u.full_name || u.name || u.username;
+            // Pre-seleccionar al usuario logueado
+            const selected = name === (currentUser.full_name || currentUser.username) ? 'selected' : '';
+            assigneesHtml += `<option value="${u.id || name}" ${selected}>${escapeHtml(name)}</option>`;
+        });
+        assigneeEl.innerHTML = assigneesHtml;
 
         await loadTasks();
     }
 
     async function loadTasks() {
         const data = await apiRequest('/tasks/');
-        if (data) {
+        if (data && data.length > 0) {
             tasks = data;
         } else {
             tasks = [...DEMO_TASKS];
@@ -289,6 +331,7 @@
     }
 
     async function toggleTaskStatus(id, currentStatus) {
+        if (!hasPermission('edit_task')) { denyAccess('edit_task'); return; }
         let newStatus = 'in_progress';
         if (currentStatus === 'pending') newStatus = 'in_progress';
         else if (currentStatus === 'in_progress') newStatus = 'done';
@@ -304,6 +347,7 @@
     }
 
     async function deleteTask(id) {
+        if (!hasPermission('delete_task')) { denyAccess('delete_task'); return; }
         if (!confirm('¿Estás seguro de eliminar esta tarea?')) return;
         const res = await apiRequest(`/tasks/${id}`, { method: 'DELETE' });
         if (res || DEMO_MODE) {
@@ -344,6 +388,27 @@
             (!status || t.status === status) &&
             (!prio || t.priority === prio)
         );
+
+        // Calcular estadísticas basadas en los filtros aplicados
+        const total = list.length;
+        const completed = list.filter(t => t.status === 'done').length;
+        const inProgress = list.filter(t => t.status === 'in_progress').length;
+        const pending = list.filter(t => t.status === 'pending').length;
+        
+        // Tareas atrasadas: que tengan fecha límite vencida y no estén 'done'
+        const todayStr = new Date().toISOString().split('T')[0];
+        const overdue = list.filter(t => t.status !== 'done' && t.due_date && t.due_date.split('T')[0] < todayStr).length;
+
+        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        // Renderizar estadísticas dinámicamente
+        document.getElementById('statTotalTasks').textContent = total;
+        document.getElementById('statCompletedTasks').textContent = completed;
+        document.getElementById('statCompletedPercent').textContent = `↑ ${percent}% completitud`;
+        document.getElementById('statInProgressTasks').textContent = inProgress;
+        document.getElementById('statPendingTasks').textContent = pending;
+        document.getElementById('statOverdueTasks').textContent = overdue;
+
         if (currentView === 'list') renderList(list);
         else renderKanban(list);
     }
@@ -355,7 +420,19 @@
         applyFilters();
     }
 
-    document.getElementById('newTaskBtn').addEventListener('click', () => document.getElementById('taskModal').style.display = 'flex');
+    document.getElementById('newTaskBtn').addEventListener('click', () => {
+        if (!hasPermission('create_task')) { denyAccess('create_task'); return; }
+        document.getElementById('taskModal').style.display = 'flex';
+    });
+
+    // RBAC visual: atenuar botón si no tiene permiso
+    if (!hasPermission('create_task')) {
+        const btn = document.getElementById('newTaskBtn');
+        btn.style.opacity = '0.4';
+        btn.style.cursor = 'not-allowed';
+        btn.title = '🔒 Tu rol no permite crear tareas';
+    }
+
     document.getElementById('taskForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const assigneeVal = document.getElementById('taskAssignee').value;
