@@ -5,8 +5,15 @@ SGII es una solución empresarial de vanguardia para la planificación de recurs
 ---
 
 ## 🚀 Arquitectura y Tecnologías
-- **Frontend**: SPA Estática con HTML5 semántico, JavaScript vanilla (ES6+) y CSS3 premium (Dark Mode, Glassmorphism, animaciones fluidas). Visualización de KPIs y tendencias usando **Chart.js**.
+- **Frontend**: SPA Estática con HTML5 semántico, JavaScript vanilla (ES6+) y CSS3 premium (Dark Mode, Glassmorphism, animaciones fluidas). Visualización de KPIs y tendencias usando **Chart.js** cargado dinámicamente mediante CDN. No requiere compilar archivos de Node.js.
 - **Backend**: **FastAPI** (Python 3.10+), base de datos **SQLite** mediante **SQLAlchemy ORM**.
+
+### 📦 Descripción de Dependencias y Componentes Clave:
+* **`FastAPI`:** Framework de desarrollo del backend ágil y moderno. Define las rutas de la API, las reglas de negocio y los esquemas de datos.
+* **`Uvicorn`:** Servidor web ASGI de alto rendimiento que ejecuta y levanta la API de FastAPI. Escucha las peticiones del Frontend en el puerto `8000` y gestiona las conexiones en tiempo real de forma asíncrona.
+* **`SQLAlchemy`:** El ORM (Object-Relational Mapping) encargado de traducir las consultas de Python en sentencias SQL para gestionar la base de datos `sgii.db` sin escribir código SQL nativo.
+* **`python-jose`:** Librería que cifra y genera los tokens de seguridad JWT (JSON Web Tokens) durante la autenticación de usuarios.
+* **`passlib[bcrypt]`:** Componente que aplica funciones criptográficas de hash a las contraseñas, impidiendo que se guarden en texto plano dentro de la base de datos para máxima seguridad.
 - **Autenticación**: JSON Web Tokens (JWT) con encriptación bcrypt para contraseñas, control de acceso basado en roles (RBAC) y cumplimiento de estándares (GDPR / HIPAA).
 
 ---
