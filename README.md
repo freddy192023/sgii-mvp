@@ -18,6 +18,13 @@ SGII es una solución empresarial de vanguardia para la planificación de recurs
 
 ---
 
+## 📋 Requisitos Previos del Sistema
+Para poder ejecutar el backend y el frontend localmente en tu computadora, debes asegurearte de tener instalado el siguiente software:
+* **Python 3.8 o superior** (puedes descargarlo desde su sitio oficial [python.org](https://www.python.org/)).
+* **Pip** (el gestor de paquetes de Python, que viene incluido por defecto al instalar Python).
+
+---
+
 ## 🛠️ Guía de Encendido Local (Paso a Paso)
 
 Para levantar el ecosistema completo en tu computadora, sigue estos pasos:
